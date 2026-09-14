@@ -5,3 +5,9 @@ psycopg[binary]
 alembic
 pydantic-settings
 python-multipart
+sentence-transformers
+faster-whisper
+librosa
+soundfile
+opencv-python
+mediapipe

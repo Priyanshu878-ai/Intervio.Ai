@@ -9,6 +9,13 @@ from app.schemas.question import (
     QuestionResponse,
 )
 from app.schemas.answer import AnswerCreate, AnswerResponse
+from app.schemas.evaluation import (
+    AnalyzeAnswerRequest,
+    AnswerAnalysisResponse,
+    AudioAnalysisResponse,
+    EvaluationResponse,
+    VisionAnalysisResponse,
+)
 
 __all__ = [
     "CandidateCreate",
@@ -23,4 +30,11 @@ __all__ = [
     "NextQuestionResponse",
     "AnswerCreate",
     "AnswerResponse",
+    "AnalyzeAnswerRequest",
+    "EvaluationResponse",
+    "AnswerAnalysisResponse",
+    "AudioAnalysisResponse",
+    "VisionAnalysisResponse",
 ]
+
+
