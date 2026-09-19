@@ -20,8 +20,10 @@ class QuestionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+from typing import Optional
+
 class GenerateQuestionsRequest(BaseModel):
-    number_of_questions: int = Field(5, ge=1, le=20, description="Number of questions to generate (1-20)")
+    number_of_questions: Optional[int] = Field(None, ge=1, le=20, description="Optional number of questions to generate (1-20). If omitted, AI calibrates question count automatically.")
 
 
 class NextQuestionRequest(BaseModel):

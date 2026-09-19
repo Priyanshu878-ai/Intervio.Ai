@@ -1,0 +1,160 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    background-color: #06080E;
+    color: #F1F5F9;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+/* Subtle Animated 3D Background */
+.ambient-3d-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.ambient-grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 20%, #000 60%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 20%, #000 60%, transparent 100%);
+}
+
+.ambient-orb-1 {
+  position: absolute;
+  top: -15%;
+  left: 20%;
+  width: 550px;
+  height: 550px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0.0) 70%);
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: floatOrb 18s ease-in-out infinite alternate;
+}
+
+.ambient-orb-2 {
+  position: absolute;
+  top: 40%;
+  right: -10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.08) 0%, rgba(6, 182, 212, 0.0) 70%);
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: floatOrb2 22s ease-in-out infinite alternate;
+}
+
+@keyframes floatOrb {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, 30px) scale(1.08); }
+  100% { transform: translate(-20px, 50px) scale(0.95); }
+}
+
+@keyframes floatOrb2 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-50px, -30px) scale(1.05); }
+  100% { transform: translate(30px, -40px) scale(0.98); }
+}
+
+/* Custom 3D & Depth Utilities */
+.perspective-container {
+  perspective: 1200px;
+}
+
+.perspective-tilt {
+  transform: perspective(1000px) rotateX(2deg) rotateY(-1deg);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+}
+
+.perspective-tilt:hover {
+  transform: perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(-3px);
+}
+
+.card-3d {
+  background: linear-gradient(135deg, rgba(20, 28, 44, 0.75) 0%, rgba(13, 18, 30, 0.88) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 12px 32px -12px rgba(0, 0, 0, 0.65),
+    0 1px 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 2px 0 rgba(0, 0, 0, 0.5) inset;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 1rem;
+}
+
+.card-3d-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-3d-hover:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 
+    0 20px 40px -12px rgba(0, 0, 0, 0.75),
+    0 0 20px -2px rgba(99, 102, 241, 0.15),
+    0 1px 2px 0 rgba(255, 255, 255, 0.12) inset;
+  transform: translateY(-2px);
+}
+
+.btn-3d {
+  position: relative;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 0 0 rgba(67, 56, 202, 0.9), 0 10px 20px -5px rgba(99, 102, 241, 0.35);
+}
+
+.btn-3d:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 0 0 rgba(67, 56, 202, 1), 0 14px 24px -6px rgba(99, 102, 241, 0.45);
+}
+
+.btn-3d:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 0 rgba(67, 56, 202, 1), 0 4px 10px -2px rgba(99, 102, 241, 0.35);
+}
+
+/* Subtle 3D score ring */
+.score-ring-3d {
+  filter: drop-shadow(0 8px 16px rgba(99, 102, 241, 0.3));
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}

@@ -1,7 +1,8 @@
 from fastapi import APIRouter
-from app.api.routes import answers, candidates, interviews, questions
+from app.api.routes import answers, auth, candidates, interviews, questions
 
 api_router = APIRouter(prefix="/api")
+api_router.include_router(auth.router)
 api_router.include_router(candidates.router)
 api_router.include_router(interviews.router)
 api_router.include_router(questions.router)

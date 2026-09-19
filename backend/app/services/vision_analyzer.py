@@ -7,6 +7,7 @@ head posture stability, approximate camera engagement, and landmark variance.
 import math
 import logging
 import os
+import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
@@ -14,16 +15,54 @@ logger = logging.getLogger(__name__)
 # Configurable frame sampling settings for local CPU performance
 DEFAULT_FRAME_SAMPLE_INTERVAL = 5  # Process 1 frame every 5 frames
 MAX_PROCESSED_FRAMES = 100         # Maximum cap on processed frames per video
+MODEL_URL = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"
 
 
 class VisionAnalyzer:
     """
     Modular Vision Analyzer using OpenCV for video frame extraction and
-    MediaPipe Face Mesh for non-verbal feature tracking.
+    MediaPipe FaceLandmarker for non-verbal feature tracking.
     """
 
     def __init__(self, sample_interval: int = DEFAULT_FRAME_SAMPLE_INTERVAL):
         self.sample_interval = sample_interval
+        self._detector = None
+        self._load_attempted = False
+
+    def _get_model_path(self) -> str:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        models_dir = os.path.join(current_dir, "..", "models")
+        os.makedirs(models_dir, exist_ok=True)
+        return os.path.abspath(os.path.join(models_dir, "face_landmarker.task"))
+
+    def _get_detector(self):
+        if self._detector is None and not self._load_attempted:
+            self._load_attempted = True
+            try:
+                model_path = self._get_model_path()
+                if not os.path.exists(model_path):
+                    logger.info("Downloading MediaPipe face_landmarker.task...")
+                    urllib.request.urlretrieve(MODEL_URL, model_path)
+
+                import mediapipe as mp
+                from mediapipe.tasks import python
+                from mediapipe.tasks.python import vision
+
+                base_options = python.BaseOptions(model_asset_path=model_path)
+                options = vision.FaceLandmarkerOptions(
+                    base_options=base_options,
+                    output_face_blendshapes=False,
+                    output_facial_transformation_matrixes=False,
+                    num_faces=2,
+                )
+                self._detector = vision.FaceLandmarker.create_from_options(options)
+                logger.info("MediaPipe FaceLandmarker loaded successfully!")
+            except Exception as e:
+                logger.warning(
+                    f"Failed to load MediaPipe FaceLandmarker ({e}). Vision feature extraction will fallback."
+                )
+                self._detector = None
+        return self._detector
 
     def analyze_video(self, video_path: str) -> Dict[str, Any]:
         """
@@ -53,14 +92,7 @@ class VisionAnalyzer:
         video_duration = total_frames / float(fps)
         sample_step = max(self.sample_interval, total_frames // MAX_PROCESSED_FRAMES)
 
-        mp_face_mesh = mp.solutions.face_mesh
-        face_mesh = mp_face_mesh.FaceMesh(
-            static_image_mode=False,
-            max_num_faces=2,
-            refine_landmarks=False,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5,
-        )
+        detector = self._get_detector()
 
         frames_with_face = 0
         total_faces_count = 0
@@ -79,29 +111,38 @@ class VisionAnalyzer:
                 if frame_idx % sample_step == 0:
                     processed_count += 1
                     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    results = face_mesh.process(rgb_frame)
 
-                    if results.multi_face_landmarks:
-                        num_faces = len(results.multi_face_landmarks)
-                        total_faces_count += num_faces
-                        frames_with_face += 1
+                    if detector is not None:
+                        try:
+                            mp_image = mp.Image(
+                                image_format=mp.ImageFormat.SRGB, data=rgb_frame
+                            )
+                            results = detector.detect(mp_image)
 
-                        primary_face = results.multi_face_landmarks[0]
-                        # Nose tip landmark (index 1 in MediaPipe Face Mesh)
-                        nose_tip = primary_face.landmark[1]
-                        nose_x, nose_y = nose_tip.x, nose_tip.y
-                        nose_positions.append((nose_x, nose_y))
+                            if results and results.face_landmarks:
+                                num_faces = len(results.face_landmarks)
+                                total_faces_count += num_faces
+                                frames_with_face += 1
 
-                        # Approximate camera engagement: distance of nose tip from frame center (0.5, 0.5)
-                        dist_from_center = math.sqrt((nose_x - 0.5) ** 2 + (nose_y - 0.5) ** 2)
-                        gaze_offsets.append(dist_from_center)
+                                primary_face = results.face_landmarks[0]
+                                # Nose tip landmark (index 1 in 468/478 face landmarks)
+                                nose_tip = primary_face[1]
+                                nose_x, nose_y = nose_tip.x, nose_tip.y
+                                nose_positions.append((nose_x, nose_y))
+
+                                # Approximate camera engagement: distance of nose tip from frame center (0.5, 0.5)
+                                dist_from_center = math.sqrt(
+                                    (nose_x - 0.5) ** 2 + (nose_y - 0.5) ** 2
+                                )
+                                gaze_offsets.append(dist_from_center)
+                        except Exception as det_err:
+                            logger.debug(f"Frame detection error: {det_err}")
 
                 frame_idx += 1
         except Exception as e:
             logger.error(f"Error processing video frames: {e}")
         finally:
             cap.release()
-            face_mesh.close()
 
         if processed_count == 0:
             return self._empty_result(
@@ -131,7 +172,7 @@ class VisionAnalyzer:
                 "feedback": "No face detected consistently in the video recording.",
             }
 
-        # 1. Face Presence Score
+        # 1. Face Presence Score (0 - 100)
         face_presence_score = round(face_detected_ratio * 100.0, 1)
 
         # 2. Head Movement Score & Landmark Displacement Calculation

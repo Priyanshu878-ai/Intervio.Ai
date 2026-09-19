@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Any, List, Optional
 from pydantic import BaseModel, ConfigDict
+
 
 
 class AnalyzeAnswerRequest(BaseModel):
@@ -53,5 +54,21 @@ class VisionAnalysisResponse(BaseModel):
     landmark_stability_score: float
     visual_communication_score: float
     feedback: str
+
+
+class MultimodalAnalysisResponse(BaseModel):
+    text_score: Optional[float] = None
+    audio_score: Optional[float] = None
+    vision_score: Optional[float] = None
+    final_score: float
+    performance_level: str
+    modality_weights_used: dict[str, float]
+    feedback: str
+    strengths: List[str]
+    improvement_areas: List[str]
+    text_analysis: Optional[dict[str, Any]] = None
+    audio_analysis: Optional[dict[str, Any]] = None
+    vision_analysis: Optional[dict[str, Any]] = None
+
 
 

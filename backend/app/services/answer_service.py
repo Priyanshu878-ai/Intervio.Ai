@@ -155,3 +155,60 @@ def analyze_video_file(
     return vision_analyzer.analyze_video(video_file_path)
 
 
+def analyze_multimodal_answer(
+    db: Session,
+    question_id: uuid.UUID,
+    answer_text: Optional[str] = None,
+    audio_file_path: Optional[str] = None,
+    video_file_path: Optional[str] = None,
+) -> Dict[str, Any]:
+    question = db.execute(
+        select(Question).where(Question.id == question_id)
+    ).scalar_one_or_none()
+    if not question:
+        raise KeyError("Question not found")
+
+    interview = db.execute(
+        select(Interview).where(Interview.id == question.interview_id)
+    ).scalar_one_or_none()
+    role = interview.role if interview else "default"
+
+    # 1. Process Audio if available
+    audio_analysis = None
+    if audio_file_path:
+        from app.services.audio_analyzer import audio_analyzer
+
+        audio_analysis = audio_analyzer.analyze_audio(audio_file_path)
+
+    # 2. Process Video if available
+    vision_analysis = None
+    if video_file_path:
+        from app.services.vision_analyzer import vision_analyzer
+
+        vision_analysis = vision_analyzer.analyze_video(video_file_path)
+
+    # 3. Determine effective text (use transcribed speech if answer_text is not supplied)
+    effective_text = (answer_text or "").strip()
+    if not effective_text and audio_analysis and audio_analysis.get("transcript"):
+        effective_text = audio_analysis["transcript"].strip()
+
+    # 4. Process Text analysis if text is available
+    text_analysis = None
+    if effective_text:
+        text_analysis = answer_analyzer.analyze(
+            question_text=question.question_text,
+            answer_text=effective_text,
+            role=role,
+        )
+
+    # 5. Multimodal Fusion
+    from app.services.multimodal_fusion import multimodal_fusion_engine
+
+    return multimodal_fusion_engine.fuse(
+        text_analysis=text_analysis,
+        audio_analysis=audio_analysis,
+        vision_analysis=vision_analysis,
+    )
+
+
+

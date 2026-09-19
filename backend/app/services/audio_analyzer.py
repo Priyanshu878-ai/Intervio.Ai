@@ -66,9 +66,17 @@ class AudioAnalyzer:
 
                 duration = librosa.get_duration(path=audio_path)
                 return float(duration)
-            except Exception as e:
-                logger.warning(f"Could not determine audio duration for {audio_path}: {e}")
-                return None
+            except Exception:
+                try:
+                    import av
+
+                    with av.open(audio_path) as container:
+                        if container.duration:
+                            return float(container.duration) / float(av.time_base)
+                    return None
+                except Exception as e:
+                    logger.warning(f"Could not determine audio duration for {audio_path}: {e}")
+                    return None
 
     def _analyze_fillers(self, transcript: str) -> Tuple[int, Dict[str, int]]:
         lowered = transcript.lower()

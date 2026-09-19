@@ -326,6 +326,26 @@ class QuestionGenerator:
         available_tech = [q for q in tech_pool if q["text"] not in exclude_texts]
         available_beh = [q for q in beh_pool if q["text"] not in exclude_texts]
 
+        # If current pool is exhausted, cascade to other difficulties and then to fallback pool
+        if not available_tech and not available_beh:
+            if role_key in QUESTION_BANK:
+                for alt_d in ["medium", "easy", "hard"]:
+                    alt_data = QUESTION_BANK[role_key].get(alt_d, {})
+                    alt_t = [q for q in alt_data.get("technical", []) if q["text"] not in exclude_texts]
+                    alt_b = [q for q in alt_data.get("behavioral", []) if q["text"] not in exclude_texts]
+                    if alt_t or alt_b:
+                        available_tech, available_beh = alt_t, alt_b
+                        break
+
+            if not available_tech and not available_beh:
+                for alt_d in ["medium", "easy", "hard"]:
+                    alt_data = FALLBACK_QUESTIONS.get(alt_d, {})
+                    alt_t = [q for q in alt_data.get("technical", []) if q["text"] not in exclude_texts]
+                    alt_b = [q for q in alt_data.get("behavioral", []) if q["text"] not in exclude_texts]
+                    if alt_t or alt_b:
+                        available_tech, available_beh = alt_t, alt_b
+                        break
+
         # Select candidate sequence based on interview_type
         selected: List[Dict[str, str]] = []
 
