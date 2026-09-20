@@ -43,6 +43,9 @@ async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     if (res.status === 401) {
       removeStoredToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth:expired'));
+      }
     }
     let errorDetail = `HTTP ${res.status} Error`;
     try {

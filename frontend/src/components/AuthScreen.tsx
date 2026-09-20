@@ -1,23 +1,25 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Sparkles, Mail, Lock, User, ArrowRight, AlertCircle, ShieldCheck } from 'lucide-react';
 import { api } from '../services/api';
 import { CandidateResponse } from '../types/api';
 
 interface AuthScreenProps {
   onAuthSuccess: (candidate: CandidateResponse) => void;
+  initialMessage?: string | null;
 }
 
-export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
+export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess, initialMessage }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialMessage || null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     setError(null);
 
     const trimmedEmail = email.trim();

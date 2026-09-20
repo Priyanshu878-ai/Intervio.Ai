@@ -68,6 +68,7 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading || transitioning !== 'none') return;
     if (!answerText.trim() && !audioFile && !videoFile) return;
 
     const textToSubmit = answerText;
@@ -143,7 +144,7 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
         </div>
       </div>
 
-      {error && (
+      {error && !(transitioning === 'completing' || session.is_completed) && (
         <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center gap-3">
           <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
           <span>{error}</span>
@@ -160,10 +161,33 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
           <p className="text-sm text-slate-300 mb-6 max-w-md mx-auto leading-relaxed">
             All interview questions have been submitted.
           </p>
-          <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-dark-900 border border-slate-800 text-xs text-brand-300 font-semibold shadow-inner">
-            <span className="w-4 h-4 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
-            <span>Analyzing your responses...</span>
-          </div>
+          {error ? (
+            <div className="space-y-4">
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs max-w-md mx-auto">
+                {error}
+              </div>
+              <button
+                type="button"
+                onClick={onComplete}
+                disabled={isLoading}
+                className="btn-3d px-6 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-white font-bold text-xs inline-flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isLoading ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Loading Report...</span>
+                  </>
+                ) : (
+                  <span>Retry Loading Report</span>
+                )}
+              </button>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-dark-900 border border-slate-800 text-xs text-brand-300 font-semibold shadow-inner">
+              <span className="w-4 h-4 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
+              <span>Analyzing your responses...</span>
+            </div>
+          )}
         </div>
       ) : (
         <>

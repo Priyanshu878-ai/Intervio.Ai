@@ -76,6 +76,19 @@ export const App: React.FC = () => {
     };
 
     initAuth();
+
+    const handleAuthExpired = () => {
+      setCurrentUser(null);
+      setActiveInterview(null);
+      setSession(null);
+      setReport(null);
+      setHistory([]);
+      setCurrentScreen('dashboard');
+      setError('Your session has expired. Please sign in again to continue.');
+    };
+
+    window.addEventListener('auth:expired', handleAuthExpired);
+    return () => window.removeEventListener('auth:expired', handleAuthExpired);
   }, []);
 
   // 3. Auth Handlers
@@ -250,7 +263,7 @@ export const App: React.FC = () => {
 
   // Unauthenticated Screen
   if (!currentUser) {
-    return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
+    return <AuthScreen onAuthSuccess={handleAuthSuccess} initialMessage={error} />;
   }
 
   const isInterviewActive = currentScreen === 'interview';
@@ -313,6 +326,16 @@ export const App: React.FC = () => {
           </div>
         )}
 
+        {/* Async Data Fetching Banner (e.g., retrieving reports from Dashboard / History) */}
+        {isLoading && currentScreen !== 'setup' && currentScreen !== 'interview' && (
+          <div className="max-w-6xl mx-auto px-4 mt-4 w-full">
+            <div className="p-3.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs flex items-center gap-3">
+              <span className="w-4 h-4 border-2 border-brand-400 border-t-transparent rounded-full animate-spin shrink-0" />
+              <span>Loading assessment data...</span>
+            </div>
+          </div>
+        )}
+
         <main className="flex-1">
           {currentScreen === 'dashboard' && (
             <DashboardScreen
@@ -321,6 +344,7 @@ export const App: React.FC = () => {
               onStartInterview={() => setCurrentScreen('setup')}
               onViewHistory={() => setCurrentScreen('history')}
               onViewReport={handleViewReport}
+              onViewProfile={() => setCurrentScreen('profile')}
             />
           )}
 
@@ -345,6 +369,7 @@ export const App: React.FC = () => {
             <ProfileScreen
               candidate={currentUser}
               onProfileUpdated={handleProfileUpdated}
+              onStartInterview={() => setCurrentScreen('setup')}
             />
           )}
 

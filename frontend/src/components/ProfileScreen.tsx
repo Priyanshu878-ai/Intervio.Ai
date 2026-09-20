@@ -70,26 +70,29 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   // Intelligence data state
   const [intelligence, setIntelligence] = useState<CandidateIntelligenceResponse | null>(null);
   const [isIntelligenceLoading, setIsIntelligenceLoading] = useState(true);
+  const [intelligenceError, setIntelligenceError] = useState<string | null>(null);
+
+  const fetchIntelligence = async () => {
+    setIsIntelligenceLoading(true);
+    setIntelligenceError(null);
+    try {
+      const data = await api.getMyIntelligence();
+      setIntelligence(data);
+    } catch (err: any) {
+      setIntelligenceError(err?.message || 'Failed to load candidate intelligence analytics.');
+      setIntelligence(null);
+    } finally {
+      setIsIntelligenceLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchIntelligence = async () => {
-      setIsIntelligenceLoading(true);
-      try {
-        const data = await api.getMyIntelligence();
-        setIntelligence(data);
-      } catch {
-        // graceful empty fallback if network/auth issues
-        setIntelligence(null);
-      } finally {
-        setIsIntelligenceLoading(false);
-      }
-    };
-
     fetchIntelligence();
   }, [candidate.id]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     setSuccessMsg(null);
     setErrorMsg(null);
 
@@ -168,6 +171,25 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <div className="card-3d p-12 text-center text-slate-400 space-y-3">
               <span className="w-8 h-8 border-2 border-brand-400 border-t-transparent rounded-full animate-spin inline-block" />
               <div className="text-xs font-semibold">Synthesizing candidate intelligence...</div>
+            </div>
+          ) : intelligenceError ? (
+            <div className="card-3d p-10 sm:p-14 text-center space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mx-auto shadow-inner">
+                <AlertCircle className="w-8 h-8" />
+              </div>
+              <h3 className="text-lg font-bold text-white">Failed to Load Candidate Intelligence</h3>
+              <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
+                {intelligenceError}
+              </p>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={fetchIntelligence}
+                  className="btn-3d px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs inline-flex items-center gap-2 cursor-pointer border border-slate-700 transition-colors"
+                >
+                  <span>Retry Loading</span>
+                </button>
+              </div>
             </div>
           ) : !intelligence || !intelligence.has_data ? (
             /* Clear, Constructive Empty State */

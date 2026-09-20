@@ -69,6 +69,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     if (!name.trim() || !email.trim()) return;
     onStart({
       candidateName: name.trim(),

@@ -33,6 +33,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
   const [hasRecorded, setHasRecorded] = useState(false);
+  const [recordingError, setRecordingError] = useState<string | null>(null);
 
   // Audio level visualizer state
   const [micLevel, setMicLevel] = useState<number>(0);
@@ -261,9 +262,10 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       timerIntervalRef.current = window.setInterval(() => {
         setRecordingSeconds((prev) => prev + 1);
       }, 1000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to start MediaRecorder:', err);
       setIsRecording(false);
+      setRecordingError(err?.message || 'Failed to start recording with current media device.');
     }
   };
 
@@ -291,32 +293,37 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
     // Small delay to ensure final ondataavailable fired
     await new Promise((resolve) => setTimeout(resolve, 300));
 
-    // Construct Video File
-    let videoFile: File | null = null;
-    if (videoChunksRef.current.length > 0) {
-      const videoBlobType = videoChunksRef.current[0]?.type || 'video/webm';
-      const videoBlob = new Blob(videoChunksRef.current, { type: videoBlobType });
-      const videoUrl = URL.createObjectURL(videoBlob);
-      setRecordedVideoUrl(videoUrl);
-      videoFile = new File([videoBlob], 'recorded_response.webm', { type: videoBlobType });
+    try {
+      // Construct Video File
+      let videoFile: File | null = null;
+      if (videoChunksRef.current.length > 0) {
+        const videoBlobType = videoChunksRef.current[0]?.type || 'video/webm';
+        const videoBlob = new Blob(videoChunksRef.current, { type: videoBlobType });
+        const videoUrl = URL.createObjectURL(videoBlob);
+        setRecordedVideoUrl(videoUrl);
+        videoFile = new File([videoBlob], 'recorded_response.webm', { type: videoBlobType });
+      }
+
+      // Construct Audio File (convert to WAV for max backend compatibility)
+      let audioFile: File | null = null;
+      if (audioChunksRef.current.length > 0) {
+        const audioBlobType = audioChunksRef.current[0]?.type || 'audio/webm';
+        const audioBlob = new Blob(audioChunksRef.current, { type: audioBlobType });
+        audioFile = await audioBlobToWav(audioBlob);
+      } else if (videoFile) {
+        // If audio tracks were embedded in video blob
+        const videoBlob = new Blob(videoChunksRef.current, { type: videoChunksRef.current[0]?.type || 'video/webm' });
+        audioFile = await audioBlobToWav(videoBlob);
+      }
+
+      setHasRecorded(true);
+
+      // Notify parent with prepared Files
+      onRecordingComplete(audioFile, videoFile, finalDuration);
+    } catch (err: any) {
+      console.error('Failed to process recording:', err);
+      setRecordingError('Failed to process recorded media. Please try retaking your response.');
     }
-
-    // Construct Audio File (convert to WAV for max backend compatibility)
-    let audioFile: File | null = null;
-    if (audioChunksRef.current.length > 0) {
-      const audioBlobType = audioChunksRef.current[0]?.type || 'audio/webm';
-      const audioBlob = new Blob(audioChunksRef.current, { type: audioBlobType });
-      audioFile = await audioBlobToWav(audioBlob);
-    } else if (videoFile) {
-      // If audio tracks were embedded in video blob
-      const videoBlob = new Blob(videoChunksRef.current, { type: videoChunksRef.current[0]?.type || 'video/webm' });
-      audioFile = await audioBlobToWav(videoBlob);
-    }
-
-    setHasRecorded(true);
-
-    // Notify parent with prepared Files
-    onRecordingComplete(audioFile, videoFile, finalDuration);
   };
 
   // 5. Retake Recording
@@ -346,6 +353,19 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
 
   return (
     <div className="space-y-4">
+      {recordingError && (
+        <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+          <span>{recordingError}</span>
+          <button
+            type="button"
+            onClick={() => setRecordingError(null)}
+            className="text-xs font-bold text-rose-400 hover:text-rose-200 cursor-pointer ml-3 shrink-0"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Camera & Video Box */}
       <div className="card-3d relative overflow-hidden bg-dark-950 border border-slate-800 rounded-2xl shadow-2xl">
         {/* Aspect Container */}
