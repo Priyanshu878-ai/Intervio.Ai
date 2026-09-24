@@ -5,9 +5,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class CandidateCreate(BaseModel):
-    name: str
-    email: str = Field(..., pattern=r"^[^@]+@[^@]+\.[^@]+$")
-    password: Optional[str] = None
+    name: str = Field(..., min_length=2, max_length=100)
+    email: str = Field(..., pattern=r"^[^@]+@[^@]+\.[^@]+$", max_length=255)
+    password: Optional[str] = Field(None, min_length=6, max_length=128)
 
 
 class CandidateResponse(BaseModel):

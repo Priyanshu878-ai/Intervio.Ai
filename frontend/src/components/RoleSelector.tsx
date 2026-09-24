@@ -188,7 +188,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
   };
 
   return (
-    <div ref={containerRef} className="space-y-4">
+    <div ref={containerRef} className="space-y-4 relative z-30">
       {/* 1. Selected Role Pill / Card */}
       <div className="p-3.5 rounded-xl bg-dark-900/90 border border-slate-800 shadow-inner flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -223,7 +223,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
       </div>
 
       {/* 2. Searchable Input & Dropdown */}
-      <div className="relative">
+      <div className="relative z-40">
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
             <Search className="w-4 h-4" />
@@ -263,13 +263,13 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
 
         {/* Floating Suggestion Dropdown */}
         {isOpen && (
-          <div className="absolute z-50 left-0 right-0 mt-2 bg-dark-900 border border-slate-700/80 rounded-2xl shadow-2xl backdrop-blur-xl overflow-hidden animate-fadeIn max-h-72 flex flex-col">
-            <div className="px-3.5 py-2 border-b border-slate-800 flex items-center justify-between text-[11px] font-semibold text-slate-400 bg-dark-950/60">
+          <div className="absolute z-50 left-0 right-0 mt-2 bg-dark-900/95 border border-slate-700/90 rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.85)] backdrop-blur-2xl overflow-hidden animate-fadeIn max-h-80 flex flex-col">
+            <div className="px-3.5 py-2 border-b border-slate-800 flex items-center justify-between text-[11px] font-semibold text-slate-400 bg-dark-950/70">
               <span>SUGGESTED ROLES ({suggestions.length})</span>
               <span className="font-normal text-slate-500">Press ↵ Enter to select</span>
             </div>
 
-            <div className="overflow-y-auto p-1.5 space-y-1 divide-y divide-slate-800/40">
+            <div className="overflow-y-auto p-1.5 space-y-1 divide-y divide-slate-800/40 overscroll-contain">
               {suggestions.map((item, idx) => {
                 const isSelected = value.toLowerCase() === item.title.toLowerCase();
                 const isHighlighted = highlightedIndex === idx;

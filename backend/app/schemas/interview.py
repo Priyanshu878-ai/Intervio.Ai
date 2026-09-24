@@ -1,14 +1,14 @@
 import uuid
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class InterviewCreate(BaseModel):
     candidate_id: uuid.UUID
-    role: str
-    difficulty: str
-    interview_type: str
+    role: str = Field(..., min_length=2, max_length=100)
+    difficulty: str = Field(..., pattern=r"^(easy|medium|hard)$")
+    interview_type: str = Field(..., min_length=2, max_length=50)
 
 
 class InterviewResponse(BaseModel):

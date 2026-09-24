@@ -1,4 +1,4 @@
-﻿from typing import Optional
+from typing import Optional
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -23,7 +23,15 @@ def get_current_token(authorization: Optional[str] = Header(None)) -> str:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    return parts[1]
+    token = parts[1].strip()
+    if not token or len(token) < 16 or len(token) > 256:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or malformed authentication token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return token
 
 
 def get_current_candidate(

@@ -15,6 +15,7 @@ import { LiveInterviewScreen } from './components/LiveInterviewScreen';
 import { InterviewHistoryScreen } from './components/InterviewHistoryScreen';
 import { ProfileScreen } from './components/ProfileScreen';
 import { ReportDashboard } from './components/ReportDashboard';
+import { FuturisticBackground } from './components/FuturisticBackground';
 import { api } from './services/api';
 import { 
   InterviewSessionResponse, 
@@ -270,31 +271,31 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex bg-dark-950 text-slate-100 relative overflow-x-hidden">
-      {/* Ambient 3D Depth Layer */}
-      <div className="ambient-3d-bg pointer-events-none" aria-hidden="true">
-        <div className="ambient-grid" />
-        <div className="ambient-orb-1" />
-        <div className="ambient-orb-2" />
-      </div>
+      {/* Futuristic 3D Animated Background */}
+      <FuturisticBackground />
 
       {/* Persistent Sidebar for Desktop (Hidden during active interview) */}
       {!isInterviewActive && (
-        <Sidebar
-          currentTab={
-            currentScreen === 'dashboard' || currentScreen === 'setup' || currentScreen === 'history' || currentScreen === 'profile'
-              ? currentScreen
-              : 'dashboard'
-          }
-          onSelectTab={(tab: NavigationTab) => {
-            if (currentScreen === 'report') {
-              setReport(null);
+        <>
+          <Sidebar
+            currentTab={
+              currentScreen === 'dashboard' || currentScreen === 'setup' || currentScreen === 'history' || currentScreen === 'profile'
+                ? currentScreen
+                : 'dashboard'
             }
-            setError(null);
-            setCurrentScreen(tab);
-          }}
-          candidate={currentUser}
-          onLogout={handleLogout}
-        />
+            onSelectTab={(tab: NavigationTab) => {
+              if (currentScreen === 'report') {
+                setReport(null);
+              }
+              setError(null);
+              setCurrentScreen(tab);
+            }}
+            candidate={currentUser}
+            onLogout={handleLogout}
+          />
+          {/* Spacer so main content aligns beside fixed desktop sidebar */}
+          <div className="hidden md:block w-64 shrink-0" aria-hidden="true" />
+        </>
       )}
 
       {/* Main Content Area */}

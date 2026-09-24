@@ -159,6 +159,8 @@ class InterviewOrchestrator:
         Ensures at least the initial question exists.
         """
         interview = self._get_interview(db, interview_id)
+        if interview.status == "completed":
+            raise ValueError("Interview is already completed and cannot be restarted.")
         self._get_candidate(db, interview.candidate_id)
 
         now_utc = datetime.now(timezone.utc)
@@ -250,6 +252,8 @@ class InterviewOrchestrator:
         AI-controlled interview length/evidence, and returns the next adaptive question or completes.
         """
         interview = self._get_interview(db, interview_id)
+        if interview.status == "completed":
+            raise ValueError("Interview is already completed. No further answers can be submitted.")
 
         # Validate question
         question = db.execute(

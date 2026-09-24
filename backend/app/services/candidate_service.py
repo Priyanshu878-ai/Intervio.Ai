@@ -9,16 +9,17 @@ from app.schemas.candidate import CandidateCreate, CandidateProfileUpdate
 
 
 def create_candidate(db: Session, candidate_in: CandidateCreate) -> Candidate:
+    normalized_email = candidate_in.email.lower().strip()
     existing = db.execute(
-        select(Candidate).where(Candidate.email == candidate_in.email)
+        select(Candidate).where(Candidate.email == normalized_email)
     ).scalar_one_or_none()
     if existing:
         raise ValueError("Candidate with this email already exists")
 
     hashed_pw = hash_password(candidate_in.password) if candidate_in.password else None
     candidate = Candidate(
-        name=candidate_in.name,
-        email=candidate_in.email,
+        name=candidate_in.name.strip(),
+        email=normalized_email,
         hashed_password=hashed_pw,
     )
     db.add(candidate)

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
   Briefcase, 
   Sparkles, 
-  User, 
   Layers, 
   Sliders, 
   ArrowRight, 
@@ -61,8 +60,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
     return found ? found.id : 'technical';
   }, [candidate]);
 
-  const [name, setName] = useState(candidate?.name || 'Alex Morgan');
-  const [email, setEmail] = useState(candidate?.email || 'alex.morgan@example.com');
+  const candidateName = candidate?.name || 'Alex Morgan';
+  const candidateEmail = candidate?.email || 'alex.morgan@example.com';
   const [role, setRole] = useState(defaultRole);
   const [difficulty, setDifficulty] = useState(defaultDifficulty);
   const [interviewType, setInterviewType] = useState(defaultType);
@@ -70,10 +69,9 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isLoading) return;
-    if (!name.trim() || !email.trim()) return;
     onStart({
-      candidateName: name.trim(),
-      candidateEmail: email.trim(),
+      candidateName,
+      candidateEmail,
       role,
       difficulty,
       interviewType,
@@ -127,57 +125,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
 
       {/* Setup Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Candidate Information Card */}
-        <div className="card-3d p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-white flex items-center gap-2">
-              <User className="w-4 h-4 text-brand-400" />
-              <span>Candidate Profile</span>
-            </h2>
-            {candidate && (
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
-                Authenticated Account
-              </span>
-            )}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                Full Name
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  required
-                  disabled={Boolean(candidate)}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Jordan Hayes"
-                  className="w-full bg-dark-900 border border-slate-800 focus:border-brand-500 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition-colors disabled:opacity-75 disabled:bg-dark-950"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                Email Address
-              </label>
-              <div className="relative">
-                <input
-                  type="email"
-                  required
-                  disabled={Boolean(candidate)}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. jordan@example.com"
-                  className="w-full bg-dark-900 border border-slate-800 focus:border-brand-500 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition-colors disabled:opacity-75 disabled:bg-dark-950"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Role Selection */}
-        <div className="card-3d p-6">
+        <div className="card-3d p-6 relative z-30">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-semibold text-white flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-brand-cyan" />
@@ -196,7 +145,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
         </div>
 
         {/* Difficulty & Question Count */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
           {/* Difficulty */}
           <div className="card-3d p-6">
             <h2 className="text-base font-semibold text-white flex items-center gap-2 mb-4">

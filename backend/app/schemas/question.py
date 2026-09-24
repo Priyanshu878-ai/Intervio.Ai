@@ -4,9 +4,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class QuestionCreate(BaseModel):
-    question_text: str
-    question_type: str
-    sequence_number: int
+    question_text: str = Field(..., min_length=5, max_length=2000)
+    question_type: str = Field(..., min_length=2, max_length=50)
+    sequence_number: int = Field(..., ge=1, le=100)
 
 
 class QuestionResponse(BaseModel):

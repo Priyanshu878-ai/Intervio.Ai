@@ -6,6 +6,14 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_candidate
+from app.core.upload_security import (
+    ALLOWED_AUDIO_EXTENSIONS,
+    ALLOWED_VIDEO_EXTENSIONS,
+    MAX_AUDIO_BYTES,
+    MAX_VIDEO_BYTES,
+    validate_and_save_upload,
+    validate_answer_text,
+)
 from app.db.models.candidate import Candidate
 from app.db.session import get_db
 from app.schemas.interview import InterviewCreate, InterviewResponse
@@ -90,7 +98,12 @@ def generate_questions(
     current_candidate: Candidate = Depends(get_current_candidate),
     db: Session = Depends(get_db),
 ):
-    _verify_interview_ownership(db, interview_id, current_candidate.id)
+    interview = _verify_interview_ownership(db, interview_id, current_candidate.id)
+    if interview.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot generate questions for a completed interview",
+        )
     count = req.number_of_questions if (req and req.number_of_questions is not None) else 1
     try:
         return question_service.generate_and_save_questions(
@@ -117,7 +130,12 @@ def get_next_adaptive_question(
     current_candidate: Candidate = Depends(get_current_candidate),
     db: Session = Depends(get_db),
 ):
-    _verify_interview_ownership(db, interview_id, current_candidate.id)
+    interview = _verify_interview_ownership(db, interview_id, current_candidate.id)
+    if interview.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot generate next question for a completed interview",
+        )
     try:
         return question_service.generate_adaptive_next_question(
             db=db,
@@ -142,11 +160,18 @@ def start_interview_session(
     current_candidate: Candidate = Depends(get_current_candidate),
     db: Session = Depends(get_db),
 ):
-    _verify_interview_ownership(db, interview_id, current_candidate.id)
+    interview = _verify_interview_ownership(db, interview_id, current_candidate.id)
+    if interview.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Interview is already completed and cannot be restarted",
+        )
     try:
         return interview_orchestrator.start_interview(db=db, interview_id=interview_id)
     except KeyError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e).strip("'"))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get(
@@ -184,47 +209,45 @@ def submit_interview_answer(
     current_candidate: Candidate = Depends(get_current_candidate),
     db: Session = Depends(get_db),
 ):
-    _verify_interview_ownership(db, interview_id, current_candidate.id)
+    interview = _verify_interview_ownership(db, interview_id, current_candidate.id)
+    if interview.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Interview is already completed. No further answers can be submitted.",
+        )
+
+    sanitized_text = validate_answer_text(answer_text)
+    audio_tmp_path = validate_and_save_upload(
+        audio_file, ALLOWED_AUDIO_EXTENSIONS, MAX_AUDIO_BYTES, ".wav"
+    )
+    video_tmp_path = validate_and_save_upload(
+        video_file, ALLOWED_VIDEO_EXTENSIONS, MAX_VIDEO_BYTES, ".mp4"
+    )
+
     try:
-        audio_tmp_path = None
-        video_tmp_path = None
-
-        if audio_file and audio_file.filename:
-            suffix = os.path.splitext(audio_file.filename)[1] or ".wav"
-            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_audio:
-                tmp_audio.write(audio_file.file.read())
-                audio_tmp_path = tmp_audio.name
-
-        if video_file and video_file.filename:
-            suffix = os.path.splitext(video_file.filename)[1] or ".mp4"
-            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_video:
-                tmp_video.write(video_file.file.read())
-                video_tmp_path = tmp_video.name
-
-        try:
-            return interview_orchestrator.submit_answer(
-                db=db,
-                interview_id=interview_id,
-                question_id=question_id,
-                answer_text=answer_text,
-                audio_file_path=audio_tmp_path,
-                video_file_path=video_tmp_path,
-            )
-        finally:
-            if audio_tmp_path and os.path.exists(audio_tmp_path):
-                try:
-                    os.remove(audio_tmp_path)
-                except Exception:
-                    pass
-            if video_tmp_path and os.path.exists(video_tmp_path):
-                try:
-                    os.remove(video_tmp_path)
-                except Exception:
-                    pass
+        return interview_orchestrator.submit_answer(
+            db=db,
+            interview_id=interview_id,
+            question_id=question_id,
+            answer_text=sanitized_text,
+            audio_file_path=audio_tmp_path,
+            video_file_path=video_tmp_path,
+        )
     except KeyError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e).strip("'"))
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    finally:
+        if audio_tmp_path and os.path.exists(audio_tmp_path):
+            try:
+                os.remove(audio_tmp_path)
+            except Exception:
+                pass
+        if video_tmp_path and os.path.exists(video_tmp_path):
+            try:
+                os.remove(video_tmp_path)
+            except Exception:
+                pass
 
 
 @router.get(

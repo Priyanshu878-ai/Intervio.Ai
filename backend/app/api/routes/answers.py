@@ -1,10 +1,23 @@
 import os
-import tempfile
 import uuid
-from typing import Optional
+from typing import Optional, Tuple
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_current_candidate
+from app.core.upload_security import (
+    ALLOWED_AUDIO_EXTENSIONS,
+    ALLOWED_VIDEO_EXTENSIONS,
+    MAX_AUDIO_BYTES,
+    MAX_VIDEO_BYTES,
+    validate_and_save_upload,
+    validate_answer_text,
+)
+from app.db.models.answer import Answer
+from app.db.models.candidate import Candidate
+from app.db.models.interview import Interview
+from app.db.models.question import Question
 from app.db.session import get_db
 from app.schemas.answer import AnswerCreate, AnswerResponse
 from app.schemas.evaluation import (
@@ -19,17 +32,66 @@ from app.services import answer_service
 router = APIRouter(prefix="/questions", tags=["Answers"])
 
 
+def _verify_question_ownership(
+    db: Session, question_id: uuid.UUID, candidate_id: uuid.UUID
+) -> Tuple[Question, Interview]:
+    question = db.execute(
+        select(Question).where(Question.id == question_id)
+    ).scalar_one_or_none()
+    if not question:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Question not found"
+        )
+    interview = db.execute(
+        select(Interview).where(Interview.id == question.interview_id)
+    ).scalar_one_or_none()
+    if not interview:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found"
+        )
+    if interview.candidate_id != candidate_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: you do not have permission to access this question",
+        )
+    return question, interview
+
+
+def _sanitize_answer_response(answer: Answer) -> AnswerResponse:
+    """Masks internal server filesystem paths to prevent directory disclosure."""
+    return AnswerResponse(
+        id=answer.id,
+        question_id=answer.question_id,
+        answer_text=answer.answer_text,
+        audio_path=os.path.basename(answer.audio_path) if answer.audio_path else None,
+        video_path=os.path.basename(answer.video_path) if answer.video_path else None,
+        duration_seconds=answer.duration_seconds,
+        created_at=answer.created_at,
+    )
+
 
 @router.post(
     "/{question_id}/answer",
     response_model=AnswerResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create Answer Record",
-    description="Creates an initial answer record for a question.",
+    description="Creates an initial answer record for an authenticated candidate's question.",
 )
-def create_answer(question_id: uuid.UUID, answer_in: AnswerCreate, db: Session = Depends(get_db)):
+def create_answer(
+    question_id: uuid.UUID,
+    answer_in: AnswerCreate,
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    _, interview = _verify_question_ownership(db, question_id, current_candidate.id)
+    if interview.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Interview is already completed. No further answers can be submitted.",
+        )
     try:
-        return answer_service.create_answer(db, question_id, answer_in)
+        ans = answer_service.create_answer(db, question_id, answer_in)
+        return _sanitize_answer_response(ans)
     except KeyError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e).strip("'"))
     except ValueError as e:
@@ -40,14 +102,22 @@ def create_answer(question_id: uuid.UUID, answer_in: AnswerCreate, db: Session =
     "/{question_id}/answer",
     response_model=AnswerResponse,
     summary="Get Answer by Question ID",
-    description="Retrieves the submitted answer record for a specific question.",
+    description="Retrieves the submitted answer record for an authenticated candidate's question.",
 )
-def get_answer(question_id: uuid.UUID, db: Session = Depends(get_db)):
+def get_answer(
+    question_id: uuid.UUID,
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    _verify_question_ownership(db, question_id, current_candidate.id)
     try:
         answer = answer_service.get_answer_by_question_id(db, question_id)
         if not answer:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Answer not found for this question")
-        return answer
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Answer not found for this question",
+            )
+        return _sanitize_answer_response(answer)
     except KeyError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e).strip("'"))
 
@@ -57,18 +127,26 @@ def get_answer(question_id: uuid.UUID, db: Session = Depends(get_db)):
     response_model=AnswerAnalysisResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Analyze Text Answer",
-    description="Evaluates a written answer using deterministic and Transformer-based semantic similarity against the question prompt.",
+    description="Evaluates a written answer for an authenticated candidate's interview question.",
 )
 def analyze_question_answer(
     question_id: uuid.UUID,
     req: AnalyzeAnswerRequest,
+    current_candidate: Candidate = Depends(get_current_candidate),
     db: Session = Depends(get_db),
 ):
+    _, interview = _verify_question_ownership(db, question_id, current_candidate.id)
+    if interview.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Interview is already completed.",
+        )
+    sanitized_text = validate_answer_text(req.answer_text) or ""
     try:
         return answer_service.analyze_and_save_answer_evaluation(
             db=db,
             question_id=question_id,
-            answer_text=req.answer_text,
+            answer_text=sanitized_text,
         )
     except KeyError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e).strip("'"))
@@ -79,34 +157,42 @@ def analyze_question_answer(
     response_model=AudioAnalysisResponse,
     status_code=status.HTTP_200_OK,
     summary="Analyze Audio Response",
-    description="Evaluates speech acoustics, duration, pause patterns, speaking rate (WPM), and filler words from an audio recording (.wav).",
+    description="Evaluates speech acoustics for an authenticated candidate's interview question.",
 )
 def analyze_question_audio(
     question_id: uuid.UUID,
-    file: UploadFile = File(..., description="Audio file (.wav) to analyze"),
+    file: UploadFile = File(..., description="Audio file (.wav, .webm, etc.) to analyze"),
+    current_candidate: Candidate = Depends(get_current_candidate),
     db: Session = Depends(get_db),
 ):
+    _, interview = _verify_question_ownership(db, question_id, current_candidate.id)
+    if interview.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Interview is already completed.",
+        )
+    tmp_path = validate_and_save_upload(
+        file, ALLOWED_AUDIO_EXTENSIONS, MAX_AUDIO_BYTES, ".wav"
+    )
+    if not tmp_path:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Audio file payload is required.",
+        )
     try:
-        suffix = os.path.splitext(file.filename)[1] if file.filename else ".wav"
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-            content = file.file.read()
-            tmp.write(content)
-            tmp_path = tmp.name
-
-        try:
-            return answer_service.analyze_audio_file(
-                db=db,
-                question_id=question_id,
-                audio_file_path=tmp_path,
-            )
-        finally:
-            if os.path.exists(tmp_path):
-                try:
-                    os.remove(tmp_path)
-                except Exception:
-                    pass
+        return answer_service.analyze_audio_file(
+            db=db,
+            question_id=question_id,
+            audio_file_path=tmp_path,
+        )
     except KeyError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e).strip("'"))
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
 
 
 @router.post(
@@ -114,34 +200,42 @@ def analyze_question_audio(
     response_model=VisionAnalysisResponse,
     status_code=status.HTTP_200_OK,
     summary="Analyze Video Response",
-    description="Evaluates video frames for visual presence, gaze engagement approximations, and facial landmark stability (.mp4).",
+    description="Evaluates video frames for an authenticated candidate's interview question.",
 )
 def analyze_question_video(
     question_id: uuid.UUID,
-    file: UploadFile = File(..., description="Video file (.mp4) to analyze"),
+    file: UploadFile = File(..., description="Video file (.mp4, .webm, etc.) to analyze"),
+    current_candidate: Candidate = Depends(get_current_candidate),
     db: Session = Depends(get_db),
 ):
+    _, interview = _verify_question_ownership(db, question_id, current_candidate.id)
+    if interview.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Interview is already completed.",
+        )
+    tmp_path = validate_and_save_upload(
+        file, ALLOWED_VIDEO_EXTENSIONS, MAX_VIDEO_BYTES, ".mp4"
+    )
+    if not tmp_path:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Video file payload is required.",
+        )
     try:
-        suffix = os.path.splitext(file.filename)[1] if file.filename else ".mp4"
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-            content = file.file.read()
-            tmp.write(content)
-            tmp_path = tmp.name
-
-        try:
-            return answer_service.analyze_video_file(
-                db=db,
-                question_id=question_id,
-                video_file_path=tmp_path,
-            )
-        finally:
-            if os.path.exists(tmp_path):
-                try:
-                    os.remove(tmp_path)
-                except Exception:
-                    pass
+        return answer_service.analyze_video_file(
+            db=db,
+            question_id=question_id,
+            video_file_path=tmp_path,
+        )
     except KeyError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e).strip("'"))
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
 
 
 @router.post(
@@ -149,52 +243,47 @@ def analyze_question_video(
     response_model=MultimodalAnalysisResponse,
     status_code=status.HTTP_200_OK,
     summary="Analyze Multimodal Answer (Fusion)",
-    description="Performs fused evaluation combining text, audio, and vision modalities with dynamic weight normalization.",
+    description="Performs multimodal fusion evaluation for an authenticated candidate's interview question.",
 )
 def analyze_question_multimodal(
     question_id: uuid.UUID,
     answer_text: Optional[str] = Form(None, description="Answer text or transcript"),
-    audio_file: Optional[UploadFile] = File(None, description="Optional audio file (.wav)"),
-    video_file: Optional[UploadFile] = File(None, description="Optional video file (.mp4)"),
+    audio_file: Optional[UploadFile] = File(None, description="Optional audio file (.wav, .webm)"),
+    video_file: Optional[UploadFile] = File(None, description="Optional video file (.mp4, .webm)"),
+    current_candidate: Candidate = Depends(get_current_candidate),
     db: Session = Depends(get_db),
 ):
+    _, interview = _verify_question_ownership(db, question_id, current_candidate.id)
+    if interview.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Interview is already completed.",
+        )
+    sanitized_text = validate_answer_text(answer_text)
+    audio_tmp_path = validate_and_save_upload(
+        audio_file, ALLOWED_AUDIO_EXTENSIONS, MAX_AUDIO_BYTES, ".wav"
+    )
+    video_tmp_path = validate_and_save_upload(
+        video_file, ALLOWED_VIDEO_EXTENSIONS, MAX_VIDEO_BYTES, ".mp4"
+    )
     try:
-        audio_tmp_path = None
-        video_tmp_path = None
-
-        if audio_file and audio_file.filename:
-            suffix = os.path.splitext(audio_file.filename)[1] or ".wav"
-            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_audio:
-                tmp_audio.write(audio_file.file.read())
-                audio_tmp_path = tmp_audio.name
-
-        if video_file and video_file.filename:
-            suffix = os.path.splitext(video_file.filename)[1] or ".mp4"
-            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_video:
-                tmp_video.write(video_file.file.read())
-                video_tmp_path = tmp_video.name
-
-        try:
-            return answer_service.analyze_multimodal_answer(
-                db=db,
-                question_id=question_id,
-                answer_text=answer_text,
-                audio_file_path=audio_tmp_path,
-                video_file_path=video_tmp_path,
-            )
-        finally:
-            if audio_tmp_path and os.path.exists(audio_tmp_path):
-                try:
-                    os.remove(audio_tmp_path)
-                except Exception:
-                    pass
-            if video_tmp_path and os.path.exists(video_tmp_path):
-                try:
-                    os.remove(video_tmp_path)
-                except Exception:
-                    pass
+        return answer_service.analyze_multimodal_answer(
+            db=db,
+            question_id=question_id,
+            answer_text=sanitized_text,
+            audio_file_path=audio_tmp_path,
+            video_file_path=video_tmp_path,
+        )
     except KeyError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e).strip("'"))
-
-
-
+    finally:
+        if audio_tmp_path and os.path.exists(audio_tmp_path):
+            try:
+                os.remove(audio_tmp_path)
+            except Exception:
+                pass
+        if video_tmp_path and os.path.exists(video_tmp_path):
+            try:
+                os.remove(video_tmp_path)
+            except Exception:
+                pass
