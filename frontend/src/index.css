@@ -158,3 +158,31 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.22);
 }
+
+/* Global High-Contrast Focus Visible Ring for Keyboard Users (WCAG 2.4.7) */
+:focus-visible {
+  outline: 2px solid #06B6D4 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.3) !important;
+}
+
+/* Respect User Reduced Motion Preferences (WCAG 2.3.3 & 2.2.2) */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .ambient-orb-1,
+  .ambient-orb-2,
+  .animate-fadeIn,
+  .animate-pulse,
+  .animate-spin,
+  .animate-ping,
+  .score-ring-3d {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+

@@ -33,7 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="w-64 bg-dark-900/90 border-r border-slate-800 hidden md:flex flex-col justify-between shrink-0 h-screen fixed top-0 left-0 bottom-0 z-30 backdrop-blur-xl">
+    <aside aria-label="Application Sidebar" className="w-64 bg-dark-900/90 border-r border-slate-800 hidden md:flex flex-col justify-between shrink-0 h-screen fixed top-0 left-0 bottom-0 z-30 backdrop-blur-xl">
       <div>
         {/* Brand Header */}
         <div className="p-6 border-b border-slate-800/80">
@@ -58,13 +58,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Navigation Items */}
-        <nav className="p-4 space-y-1.5">
+        <nav aria-label="Main Navigation" className="p-4 space-y-1.5">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id;
             return (
               <button
                 key={item.id}
+                aria-current={isActive ? 'page' : undefined}
                 onClick={() => onSelectTab(item.id)}
                 className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   isActive
@@ -99,6 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           type="button"
+          aria-label="Sign Out of Account"
           onClick={onLogout}
           className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer"
         >

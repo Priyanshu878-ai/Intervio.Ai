@@ -187,6 +187,16 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
     }
   };
 
+  // Auto-scroll highlighted option into view
+  useEffect(() => {
+    if (highlightedIndex >= 0 && isOpen) {
+      const activeEl = document.getElementById(`role-option-${highlightedIndex}`);
+      if (activeEl) {
+        activeEl.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [highlightedIndex, isOpen]);
+
   return (
     <div ref={containerRef} className="space-y-4 relative z-30">
       {/* 1. Selected Role Pill / Card */}
@@ -212,6 +222,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
         <button
           type="button"
           disabled={disabled}
+          aria-label="Change target role"
           onClick={() => {
             setIsOpen(true);
             inputRef.current?.focus();
@@ -231,6 +242,13 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
           <input
             ref={inputRef}
             type="text"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={isOpen}
+            aria-haspopup="listbox"
+            aria-controls="role-suggestions-listbox"
+            aria-activedescendant={highlightedIndex >= 0 ? `role-option-${highlightedIndex}` : undefined}
+            aria-label="Search or select target role"
             disabled={disabled}
             value={searchQuery}
             onFocus={() => setIsOpen(true)}
@@ -246,6 +264,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
           {searchQuery ? (
             <button
               type="button"
+              aria-label="Clear role search"
               onClick={() => {
                 setSearchQuery('');
                 inputRef.current?.focus();
@@ -269,13 +288,21 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
               <span className="font-normal text-slate-500">Press ↵ Enter to select</span>
             </div>
 
-            <div className="overflow-y-auto p-1.5 space-y-1 divide-y divide-slate-800/40 overscroll-contain">
+            <div
+              id="role-suggestions-listbox"
+              role="listbox"
+              aria-label="Suggested Roles"
+              className="overflow-y-auto p-1.5 space-y-1 divide-y divide-slate-800/40 overscroll-contain"
+            >
               {suggestions.map((item, idx) => {
                 const isSelected = value.toLowerCase() === item.title.toLowerCase();
                 const isHighlighted = highlightedIndex === idx;
                 return (
                   <button
                     key={item.id}
+                    id={`role-option-${idx}`}
+                    role="option"
+                    aria-selected={isSelected}
                     type="button"
                     onClick={() => handleSelectRole(item.title)}
                     onMouseEnter={() => setHighlightedIndex(idx)}
@@ -311,6 +338,9 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
               {/* Custom Role Option when query is typed and not exactly matched */}
               {!hasExactMatch && searchQuery.trim().length > 0 && (
                 <button
+                  id={`role-option-${suggestions.length}`}
+                  role="option"
+                  aria-selected={false}
                   type="button"
                   onClick={() => handleSelectRole(searchQuery.trim())}
                   onMouseEnter={() => setHighlightedIndex(suggestions.length)}

@@ -61,7 +61,17 @@ def read_root():
 
 @app.get("/health")
 def health_check():
+    db_status = "ok"
+    try:
+        from app.db.session import engine
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception as e:
+        db_status = f"unhealthy: {str(e)}"
+
     return {
-        "status": "ok",
+        "status": "ok" if db_status == "ok" else "degraded",
+        "database": db_status,
         "service": "Intervio.Ai Backend",
     }

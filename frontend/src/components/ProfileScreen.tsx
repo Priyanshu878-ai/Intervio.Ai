@@ -87,7 +87,26 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   };
 
   useEffect(() => {
-    fetchIntelligence();
+    let isMounted = true;
+    const load = async () => {
+      setIsIntelligenceLoading(true);
+      setIntelligenceError(null);
+      try {
+        const data = await api.getMyIntelligence();
+        if (isMounted) setIntelligence(data);
+      } catch (err: any) {
+        if (isMounted) {
+          setIntelligenceError(err?.message || 'Failed to load candidate intelligence analytics.');
+          setIntelligence(null);
+        }
+      } finally {
+        if (isMounted) setIsIntelligenceLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
   }, [candidate.id]);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -137,8 +156,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex items-center gap-1.5 p-1 bg-dark-900 border border-slate-800 rounded-xl">
+        <div role="tablist" aria-label="Candidate Profile Sections" className="flex items-center gap-1.5 p-1 bg-dark-900 border border-slate-800 rounded-xl">
           <button
+            id="tab-intelligence"
+            role="tab"
+            aria-selected={activeTab === 'intelligence'}
+            aria-controls="tabpanel-intelligence"
             onClick={() => setActiveTab('intelligence')}
             className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'intelligence'
@@ -151,6 +174,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </button>
 
           <button
+            id="tab-settings"
+            role="tab"
+            aria-selected={activeTab === 'settings'}
+            aria-controls="tabpanel-settings"
             onClick={() => setActiveTab('settings')}
             className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'settings'
@@ -166,7 +193,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
       {/* TAB 1: INTELLIGENCE & PROGRESS TRACKING */}
       {activeTab === 'intelligence' && (
-        <div className="space-y-6 animate-fadeIn">
+        <div id="tabpanel-intelligence" role="tabpanel" aria-labelledby="tab-intelligence" className="space-y-6 animate-fadeIn">
           {isIntelligenceLoading ? (
             <div className="card-3d p-12 text-center text-slate-400 space-y-3">
               <span className="w-8 h-8 border-2 border-brand-400 border-t-transparent rounded-full animate-spin inline-block" />
@@ -460,16 +487,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
       {/* TAB 2: ACCOUNT SETTINGS & PROFILE DETAILS */}
       {activeTab === 'settings' && (
-        <div className="animate-fadeIn space-y-6">
+        <div id="tabpanel-settings" role="tabpanel" aria-labelledby="tab-settings" className="animate-fadeIn space-y-6">
           {successMsg && (
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2.5">
+            <div role="status" aria-live="polite" className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2.5">
               <Check className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>{successMsg}</span>
             </div>
           )}
 
           {errorMsg && (
-            <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5">
+            <div role="alert" aria-live="assertive" className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5">
               <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
               <span>{errorMsg}</span>
             </div>
@@ -485,10 +512,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label htmlFor="profile-name" className="block text-xs font-semibold text-slate-300 mb-1.5">
                     Full Name
                   </label>
                   <input
+                    id="profile-name"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -498,11 +526,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label htmlFor="profile-email" className="block text-xs font-semibold text-slate-300 mb-1.5">
                     Email Address (Registered)
                   </label>
                   <div className="relative">
                     <input
+                      id="profile-email"
                       type="email"
                       value={candidate.email}
                       disabled
@@ -523,10 +552,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label htmlFor="profile-target-role" className="block text-xs font-semibold text-slate-300 mb-1.5">
                     Target Role
                   </label>
                   <select
+                    id="profile-target-role"
                     value={targetRole}
                     onChange={(e) => setTargetRole(e.target.value)}
                     className="w-full bg-dark-900 border border-slate-800 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500 transition-colors cursor-pointer"
@@ -538,10 +568,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label htmlFor="profile-experience-level" className="block text-xs font-semibold text-slate-300 mb-1.5">
                     Experience Level
                   </label>
                   <select
+                    id="profile-experience-level"
                     value={experienceLevel}
                     onChange={(e) => setExperienceLevel(e.target.value)}
                     className="w-full bg-dark-900 border border-slate-800 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500 transition-colors cursor-pointer"
@@ -554,10 +585,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label htmlFor="profile-interview-type" className="block text-xs font-semibold text-slate-300 mb-1.5">
                   Preferred Interview Format
                 </label>
                 <select
+                  id="profile-interview-type"
                   value={preferredInterviewType}
                   onChange={(e) => setPreferredInterviewType(e.target.value)}
                   className="w-full bg-dark-900 border border-slate-800 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500 transition-colors cursor-pointer"
@@ -577,10 +609,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               </h3>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label htmlFor="profile-skills" className="block text-xs font-semibold text-slate-300 mb-1.5">
                   Skills (Comma-separated)
                 </label>
                 <input
+                  id="profile-skills"
                   type="text"
                   value={skills}
                   onChange={(e) => setSkills(e.target.value)}
@@ -598,6 +631,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               <button
                 type="submit"
                 disabled={isLoading}
+                aria-busy={isLoading}
                 className="btn-3d px-6 py-2.5 rounded-xl bg-gradient-to-r from-brand-500 to-indigo-600 hover:from-brand-400 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-lg shadow-brand-500/25 disabled:opacity-50 transition-all"
               >
                 {isLoading ? (

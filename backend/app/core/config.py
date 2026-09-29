@@ -1,3 +1,5 @@
+from typing import Union, List
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,12 +16,25 @@ class Settings(BaseSettings):
     POSTGRES_PORT: int = 5432
     DATABASE_URL: str = ""
 
-    CORS_ORIGINS: list[str] = [
+    CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ]
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Union[List[str], str]) -> List[str]:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",") if i.strip()]
+        if isinstance(v, str) and v.startswith("["):
+            import json
+            try:
+                return json.loads(v)
+            except Exception:
+                return [i.strip() for i in v.strip("[]").split(",") if i.strip()]
+        return v
 
     model_config = SettingsConfigDict(
         env_file=".env",

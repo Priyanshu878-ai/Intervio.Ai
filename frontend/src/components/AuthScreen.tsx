@@ -98,9 +98,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess, initialMe
       {/* Auth Card */}
       <div className="card-3d w-full max-w-md p-6 sm:p-8 relative z-10">
         {/* Toggle Mode */}
-        <div className="grid grid-cols-2 gap-1.5 p-1 bg-dark-900 border border-slate-800 rounded-xl mb-6">
+        <div role="tablist" aria-label="Authentication Mode" className="grid grid-cols-2 gap-1.5 p-1 bg-dark-900 border border-slate-800 rounded-xl mb-6">
           <button
             type="button"
+            role="tab"
+            aria-selected={mode === 'login'}
             onClick={() => { setMode('login'); setError(null); }}
             className={`py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
               mode === 'login'
@@ -112,6 +114,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess, initialMe
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={mode === 'register'}
             onClick={() => { setMode('register'); setError(null); }}
             className={`py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
               mode === 'register'
@@ -124,7 +128,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess, initialMe
         </div>
 
         {error && (
-          <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5 animate-fadeIn">
+          <div role="alert" aria-live="assertive" className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5 animate-fadeIn">
             <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
             <span>{error}</span>
           </div>
@@ -133,12 +137,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess, initialMe
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === 'register' && (
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label htmlFor="auth-name" className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Full Name
               </label>
               <div className="relative">
                 <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
+                  id="auth-name"
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -151,12 +156,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess, initialMe
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+            <label htmlFor="auth-email" className="block text-xs font-semibold text-slate-300 mb-1.5">
               Email Address
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
+                id="auth-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -168,12 +174,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess, initialMe
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+            <label htmlFor="auth-password" className="block text-xs font-semibold text-slate-300 mb-1.5">
               Password
             </label>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
+                id="auth-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -186,12 +193,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess, initialMe
 
           {mode === 'register' && (
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label htmlFor="auth-confirm-password" className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Confirm Password
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
+                  id="auth-confirm-password"
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -207,6 +215,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess, initialMe
             <button
               type="submit"
               disabled={isLoading}
+              aria-busy={isLoading}
               className="btn-3d w-full py-3 rounded-xl bg-gradient-to-r from-brand-500 to-indigo-600 hover:from-brand-400 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-brand-500/25 disabled:opacity-50 transition-all"
             >
               {isLoading ? (

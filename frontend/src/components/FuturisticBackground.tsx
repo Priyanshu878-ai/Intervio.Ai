@@ -32,7 +32,22 @@ export const FuturisticBackground: React.FC = () => {
     let targetMouseX = 0;
     let targetMouseY = 0;
 
+    // Check prefers-reduced-motion
+    const prefersReducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let prefersReducedMotion = prefersReducedMotionQuery.matches;
+
+    const handleMotionChange = (e: MediaQueryListEvent) => {
+      prefersReducedMotion = e.matches;
+      if (!prefersReducedMotion) {
+        animationFrameId = requestAnimationFrame(render);
+      }
+    };
+    if (prefersReducedMotionQuery.addEventListener) {
+      prefersReducedMotionQuery.addEventListener('change', handleMotionChange);
+    }
+
     const handlePointerMove = (e: MouseEvent) => {
+      if (prefersReducedMotion) return;
       // Normalize mouse to -1 .. 1 from screen center
       targetMouseX = (e.clientX / (window.innerWidth || 1)) * 2 - 1;
       targetMouseY = (e.clientY / (window.innerHeight || 1)) * 2 - 1;
@@ -168,11 +183,13 @@ export const FuturisticBackground: React.FC = () => {
         }
       }
 
-      // Draw glowing cyber filaments between adjacent nodes
+      // Draw glowing cyber filaments between adjacent nodes in batched single stroke
       ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(6, 182, 212, 0.12)';
       const maxDist = 175;
       const maxDistSq = maxDist * maxDist;
 
+      ctx.beginPath();
       for (let i = 0; i < projected.length; i++) {
         const p1 = projected[i];
         for (let j = i + 1; j < projected.length; j++) {
@@ -182,59 +199,56 @@ export const FuturisticBackground: React.FC = () => {
           const distSq = dx * dx + dy * dy;
 
           if (distSq < maxDistSq) {
-            const factor = 1 - Math.sqrt(distSq) / maxDist;
-            const lineAlpha = factor * Math.min(p1.alpha, p2.alpha) * 0.22;
-
-            if (lineAlpha > 0.015) {
-              const grad = ctx.createLinearGradient(p1.sx, p1.sy, p2.sx, p2.sy);
-              grad.addColorStop(0, `rgba(6, 182, 212, ${lineAlpha})`);   // Cyan
-              grad.addColorStop(1, `rgba(99, 102, 241, ${lineAlpha * 0.8})`); // Indigo
-
-              ctx.strokeStyle = grad;
-              ctx.beginPath();
-              ctx.moveTo(p1.sx, p1.sy);
-              ctx.lineTo(p2.sx, p2.sy);
-              ctx.stroke();
-            }
+            ctx.moveTo(p1.sx, p1.sy);
+            ctx.lineTo(p2.sx, p2.sy);
           }
         }
       }
+      ctx.stroke();
 
-      // Draw points with ambient glowing pulses
+      // Draw points with ambient glowing pulses (zero DOM gradient allocations for 60fps GC freedom)
       for (let i = 0; i < projected.length; i++) {
         const p = projected[i];
         const pulse = 0.8 + Math.sin(time * 3 + p.orig.phase) * 0.2;
         const radius = Math.max(1.2, p.scale * 2.2 * pulse);
 
         // Node outer glow
-        const glowRad = radius * 4;
-        const glowGrad = ctx.createRadialGradient(p.sx, p.sy, 0, p.sx, p.sy, glowRad);
-        glowGrad.addColorStop(0, `rgba(6, 182, 212, ${p.alpha * 0.35})`);
-        glowGrad.addColorStop(0.5, `rgba(99, 102, 241, ${p.alpha * 0.15})`);
-        glowGrad.addColorStop(1, 'rgba(6, 182, 212, 0)');
-
-        ctx.fillStyle = glowGrad;
+        const glowRad = radius * 3.5;
+        ctx.fillStyle = `rgba(6, 182, 212, ${p.alpha * 0.16})`;
         ctx.beginPath();
         ctx.arc(p.sx, p.sy, glowRad, 0, Math.PI * 2);
         ctx.fill();
 
         // Node core
-        ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha * 0.8})`;
+        ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha * 0.85})`;
         ctx.beginPath();
         ctx.arc(p.sx, p.sy, radius, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      animationFrameId = requestAnimationFrame(render);
+      if (!prefersReducedMotion) {
+        animationFrameId = requestAnimationFrame(render);
+      }
     };
 
     render();
 
+    let resizeRaf: number | null = null;
+    const handleResize = () => {
+      if (resizeRaf) cancelAnimationFrame(resizeRaf);
+      resizeRaf = requestAnimationFrame(resize);
+    };
+    window.addEventListener('resize', handleResize, { passive: true });
+
     return () => {
       cancelAnimationFrame(animationFrameId);
+      if (resizeRaf) cancelAnimationFrame(resizeRaf);
+      if (prefersReducedMotionQuery.removeEventListener) {
+        prefersReducedMotionQuery.removeEventListener('change', handleMotionChange);
+      }
+      window.removeEventListener('resize', handleResize);
       window.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('resize', resize);
     };
   }, []);
 

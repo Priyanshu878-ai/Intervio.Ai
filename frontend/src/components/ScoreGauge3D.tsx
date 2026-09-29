@@ -46,7 +46,7 @@ export const ScoreGauge3D: React.FC<ScoreGauge3DProps> = ({
     : 'score-grad-weak';
 
   return (
-    <div className="card-3d p-6 relative overflow-hidden flex flex-col items-center justify-center">
+    <div role="region" aria-label="Holistic Evaluation Score" className="card-3d p-6 relative overflow-hidden flex flex-col items-center justify-center">
       {/* Background ambient depth glow */}
       <div 
         className={`absolute w-44 h-44 rounded-full blur-3xl opacity-20 pointer-events-none ${
@@ -61,7 +61,7 @@ export const ScoreGauge3D: React.FC<ScoreGauge3DProps> = ({
 
       {/* 3D Gauge Circle */}
       <div className="relative w-44 h-44 flex items-center justify-center my-2">
-        <svg className="w-full h-full transform -rotate-90 score-ring-3d" viewBox="0 0 160 160">
+        <svg aria-hidden="true" className="w-full h-full transform -rotate-90 score-ring-3d" viewBox="0 0 160 160">
           <defs>
             <linearGradient id="score-grad-strong" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#10B981" />

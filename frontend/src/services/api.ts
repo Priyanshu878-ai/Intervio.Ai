@@ -15,7 +15,8 @@ import {
   CandidateIntelligenceResponse,
 } from '../types/api';
 
-const API_BASE = '/api';
+const envApiUrl = typeof import.meta !== 'undefined' ? (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL : undefined;
+const API_BASE = envApiUrl ? `${envApiUrl.replace(/\/$/, '')}/api` : '/api';
 const TOKEN_KEY = 'intervio_auth_token';
 
 export function getStoredToken(): string | null {

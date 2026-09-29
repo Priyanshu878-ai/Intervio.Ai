@@ -117,7 +117,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
       </div>
 
       {error && (
-        <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center gap-3">
+        <div role="alert" aria-live="assertive" className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center gap-3">
           <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
           <span>{error}</span>
         </div>
@@ -152,12 +152,19 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
               <Sliders className="w-4 h-4 text-brand-emerald" />
               <span>Starting Difficulty</span>
             </h2>
-            <div className="space-y-2.5">
+            <div role="radiogroup" aria-label="Starting Difficulty" className="space-y-2.5">
               {DIFFICULTIES.map((d) => {
                 const selected = difficulty === d.id;
                 return (
                   <label
                     key={d.id}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault();
+                        setDifficulty(d.id);
+                      }
+                    }}
                     onClick={() => setDifficulty(d.id)}
                     className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
                       selected
@@ -168,6 +175,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
                     <input
                       type="radio"
                       name="difficulty"
+                      aria-label={d.label}
                       checked={selected}
                       onChange={() => setDifficulty(d.id)}
                       className="mt-0.5 text-brand-500 focus:ring-0"
@@ -189,12 +197,19 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
                 <Layers className="w-4 h-4 text-brand-amber" />
                 <span>Interview Format</span>
               </h2>
-              <div className="space-y-2.5 mb-5">
+              <div role="radiogroup" aria-label="Interview Format" className="space-y-2.5 mb-5">
                 {INTERVIEW_TYPES.map((t) => {
                   const selected = interviewType === t.id;
                   return (
                     <label
                       key={t.id}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === ' ' || e.key === 'Enter') {
+                          e.preventDefault();
+                          setInterviewType(t.id);
+                        }
+                      }}
                       onClick={() => setInterviewType(t.id)}
                       className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
                         selected
@@ -205,6 +220,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
                       <input
                         type="radio"
                         name="interviewType"
+                        aria-label={t.label}
                         checked={selected}
                         onChange={() => setInterviewType(t.id)}
                         className="mt-0.5 text-brand-500 focus:ring-0"
@@ -242,6 +258,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
           <button
             type="submit"
             disabled={isLoading}
+            aria-busy={isLoading}
             className="btn-3d w-full py-4 rounded-xl bg-gradient-to-r from-brand-500 to-indigo-600 text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 hover:from-brand-400 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             {isLoading ? (

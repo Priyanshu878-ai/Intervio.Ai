@@ -145,7 +145,7 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
       </div>
 
       {error && !(transitioning === 'completing' || session.is_completed) && (
-        <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center gap-3">
+        <div role="alert" aria-live="assertive" className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center gap-3">
           <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
           <span>{error}</span>
         </div>
@@ -209,7 +209,7 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
           {currentQuestion ? (
             <div className={transitioning === 'next_question' ? 'hidden' : 'space-y-6'}>
               {/* Question Card */}
-              <div className="card-3d card-3d-hover p-6 sm:p-8">
+              <div aria-live="polite" className="card-3d card-3d-hover p-6 sm:p-8">
                 <div className="flex items-center justify-between gap-4 mb-4">
                   <span className="px-3 py-1 rounded-lg bg-brand-500/15 border border-brand-500/30 text-brand-300 text-xs font-bold font-mono">
                     QUESTION #{currentQuestion.sequence_number}
@@ -243,7 +243,7 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
               {/* Written Answer / Accompanying Notes */}
               <form onSubmit={handleSubmit} className="card-3d p-6">
                 <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-800">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                  <label htmlFor="written-answer" className="flex items-center gap-2 text-xs font-semibold text-white">
                     <FileText className="w-4 h-4 text-brand-400" />
                     <span>Written Answer / Accompanying Notes</span>
                     {(audioFile || videoFile) && (
@@ -252,7 +252,7 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
                         Recording attached
                       </span>
                     )}
-                  </div>
+                  </label>
 
                   <div className="text-[11px] text-slate-400 font-mono">
                     {wordCount} words | {answerText.length} chars
@@ -261,8 +261,10 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
 
                 <div>
                   <textarea
+                    id="written-answer"
                     rows={4}
                     value={answerText}
+                    aria-label="Written Answer / Accompanying Notes"
                     onChange={(e) => setAnswerText(e.target.value)}
                     placeholder={
                       audioFile || videoFile
@@ -291,6 +293,7 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
                   <button
                     type="submit"
                     disabled={isLoading || transitioning !== 'none' || (!answerText.trim() && !audioFile && !videoFile)}
+                    aria-busy={isLoading || transitioning !== 'none'}
                     className="btn-3d px-6 py-2.5 rounded-xl bg-gradient-to-r from-brand-500 to-indigo-600 text-white font-bold text-xs sm:text-sm flex items-center gap-2 hover:from-brand-400 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {isLoading || transitioning !== 'none' ? (

@@ -8,15 +8,17 @@ import {
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { Sidebar, NavigationTab } from './components/Sidebar';
-import { AuthScreen } from './components/AuthScreen';
-import { DashboardScreen } from './components/DashboardScreen';
-import { SetupScreen } from './components/SetupScreen';
-import { LiveInterviewScreen } from './components/LiveInterviewScreen';
-import { InterviewHistoryScreen } from './components/InterviewHistoryScreen';
-import { ProfileScreen } from './components/ProfileScreen';
-import { ReportDashboard } from './components/ReportDashboard';
 import { FuturisticBackground } from './components/FuturisticBackground';
 import { api } from './services/api';
+
+// Code-split screen components for reduced initial bundle size
+const AuthScreen = React.lazy(() => import('./components/AuthScreen').then((m) => ({ default: m.AuthScreen })));
+const DashboardScreen = React.lazy(() => import('./components/DashboardScreen').then((m) => ({ default: m.DashboardScreen })));
+const SetupScreen = React.lazy(() => import('./components/SetupScreen').then((m) => ({ default: m.SetupScreen })));
+const LiveInterviewScreen = React.lazy(() => import('./components/LiveInterviewScreen').then((m) => ({ default: m.LiveInterviewScreen })));
+const InterviewHistoryScreen = React.lazy(() => import('./components/InterviewHistoryScreen').then((m) => ({ default: m.InterviewHistoryScreen })));
+const ProfileScreen = React.lazy(() => import('./components/ProfileScreen').then((m) => ({ default: m.ProfileScreen })));
+const ReportDashboard = React.lazy(() => import('./components/ReportDashboard').then((m) => ({ default: m.ReportDashboard })));
 import { 
   InterviewSessionResponse, 
   SubmitAnswerResponse, 
@@ -63,9 +65,11 @@ export const App: React.FC = () => {
         return;
       }
       try {
-        const candidate = await api.getMe();
+        const [candidate, userHistory] = await Promise.all([
+          api.getMe(),
+          api.getMyHistory().catch(() => [] as InterviewHistoryItem[]),
+        ]);
         setCurrentUser(candidate);
-        const userHistory = await api.getMyHistory();
         setHistory(userHistory);
         setCurrentScreen('dashboard');
       } catch {
@@ -264,7 +268,16 @@ export const App: React.FC = () => {
 
   // Unauthenticated Screen
   if (!currentUser) {
-    return <AuthScreen onAuthSuccess={handleAuthSuccess} initialMessage={error} />;
+    return (
+      <React.Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center bg-dark-950 text-slate-400 text-xs font-mono">
+          <span className="w-5 h-5 border-2 border-brand-400 border-t-transparent rounded-full animate-spin mr-2.5" />
+          <span>Loading authentication...</span>
+        </div>
+      }>
+        <AuthScreen onAuthSuccess={handleAuthSuccess} initialMessage={error} />
+      </React.Suspense>
+    );
   }
 
   const isInterviewActive = currentScreen === 'interview';
@@ -338,65 +351,74 @@ export const App: React.FC = () => {
         )}
 
         <main className="flex-1">
-          {currentScreen === 'dashboard' && (
-            <DashboardScreen
-              candidate={currentUser}
-              history={history}
-              onStartInterview={() => setCurrentScreen('setup')}
-              onViewHistory={() => setCurrentScreen('history')}
-              onViewReport={handleViewReport}
-              onViewProfile={() => setCurrentScreen('profile')}
-            />
-          )}
+          <React.Suspense fallback={
+            <div className="flex items-center justify-center min-h-[360px] text-slate-400 text-xs font-mono">
+              <span className="w-5 h-5 border-2 border-brand-400 border-t-transparent rounded-full animate-spin mr-2.5" />
+              <span>Loading view...</span>
+            </div>
+          }>
+            {currentScreen === 'dashboard' && (
+              <DashboardScreen
+                candidate={currentUser}
+                history={history}
+                onStartInterview={() => setCurrentScreen('setup')}
+                onViewHistory={() => setCurrentScreen('history')}
+                onViewReport={handleViewReport}
+                onViewProfile={() => setCurrentScreen('profile')}
+              />
+            )}
 
-          {currentScreen === 'setup' && (
-            <SetupScreen
-              candidate={currentUser}
-              onStart={handleStartSetup}
-              isLoading={isLoading}
-              error={error}
-            />
-          )}
+            {currentScreen === 'setup' && (
+              <SetupScreen
+                candidate={currentUser}
+                onStart={handleStartSetup}
+                isLoading={isLoading}
+                error={error}
+              />
+            )}
 
-          {currentScreen === 'history' && (
-            <InterviewHistoryScreen
-              history={history}
-              onStartInterview={() => setCurrentScreen('setup')}
-              onViewReport={handleViewReport}
-            />
-          )}
+            {currentScreen === 'history' && (
+              <InterviewHistoryScreen
+                history={history}
+                onStartInterview={() => setCurrentScreen('setup')}
+                onViewReport={handleViewReport}
+              />
+            )}
 
-          {currentScreen === 'profile' && (
-            <ProfileScreen
-              candidate={currentUser}
-              onProfileUpdated={handleProfileUpdated}
-              onStartInterview={() => setCurrentScreen('setup')}
-            />
-          )}
+            {currentScreen === 'profile' && (
+              <ProfileScreen
+                candidate={currentUser}
+                onProfileUpdated={handleProfileUpdated}
+                onStartInterview={() => setCurrentScreen('setup')}
+              />
+            )}
 
-          {currentScreen === 'interview' && session && (
-            <LiveInterviewScreen
-              session={session}
-              currentQuestion={session.current_question}
-              onSubmitAnswer={handleSubmitAnswer}
-              onComplete={handleComplete}
-              isLoading={isLoading}
-              error={error}
-            />
-          )}
+            {currentScreen === 'interview' && session && (
+              <LiveInterviewScreen
+                session={session}
+                currentQuestion={session.current_question}
+                onSubmitAnswer={handleSubmitAnswer}
+                onComplete={handleComplete}
+                isLoading={isLoading}
+                error={error}
+              />
+            )}
 
-          {currentScreen === 'report' && report && (
-            <ReportDashboard
-              report={report}
-              onReset={handleCloseReport}
-            />
-          )}
+            {currentScreen === 'report' && report && (
+              <ReportDashboard
+                report={report}
+                onReset={handleCloseReport}
+              />
+            )}
+          </React.Suspense>
         </main>
 
         {/* Mobile Bottom Navigation Bar (Hidden during active interview) */}
         {!isInterviewActive && (
-          <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-dark-900/95 backdrop-blur-xl border-t border-slate-800 flex items-center justify-around py-2 px-1">
+          <nav aria-label="Mobile Navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-dark-900/95 backdrop-blur-xl border-t border-slate-800 flex items-center justify-around py-2 px-1">
             <button
+              aria-label="Dashboard"
+              aria-current={currentScreen === 'dashboard' ? 'page' : undefined}
               onClick={() => {
                 if (currentScreen === 'report') setReport(null);
                 setCurrentScreen('dashboard');
@@ -410,6 +432,8 @@ export const App: React.FC = () => {
             </button>
 
             <button
+              aria-label="Start Interview"
+              aria-current={currentScreen === 'setup' ? 'page' : undefined}
               onClick={() => {
                 if (currentScreen === 'report') setReport(null);
                 setCurrentScreen('setup');
@@ -423,6 +447,8 @@ export const App: React.FC = () => {
             </button>
 
             <button
+              aria-label="Interview History"
+              aria-current={currentScreen === 'history' ? 'page' : undefined}
               onClick={() => {
                 if (currentScreen === 'report') setReport(null);
                 setCurrentScreen('history');
@@ -436,6 +462,8 @@ export const App: React.FC = () => {
             </button>
 
             <button
+              aria-label="Profile"
+              aria-current={currentScreen === 'profile' ? 'page' : undefined}
               onClick={() => {
                 if (currentScreen === 'report') setReport(null);
                 setCurrentScreen('profile');
@@ -447,7 +475,7 @@ export const App: React.FC = () => {
               <User className="w-4 h-4" />
               <span>Profile</span>
             </button>
-          </div>
+          </nav>
         )}
 
         <footer className="py-4 border-t border-slate-800/80 text-center text-xs text-slate-500">

@@ -18,7 +18,7 @@ interface CameraCaptureProps {
   isSubmitting?: boolean;
 }
 
-export const CameraCapture: React.FC<CameraCaptureProps> = ({
+export const CameraCapture: React.FC<CameraCaptureProps> = React.memo(({
   questionId,
   onRecordingComplete,
   onRecordingClear,
@@ -35,9 +35,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
   const [hasRecorded, setHasRecorded] = useState(false);
   const [recordingError, setRecordingError] = useState<string | null>(null);
 
-  // Audio level visualizer state
-  const [micLevel, setMicLevel] = useState<number>(0);
-
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const recordedPreviewRef = useRef<HTMLVideoElement | null>(null);
   const videoRecorderRef = useRef<MediaRecorder | null>(null);
@@ -47,6 +44,9 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
   const timerIntervalRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const micBarRef = useRef<HTMLDivElement | null>(null);
+  const micIconRef = useRef<SVGSVGElement | null>(null);
 
   // 1. Initialize camera & microphone stream
   const initMedia = async () => {
@@ -61,8 +61,9 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
 
     try {
       // Clean up previous stream if any
-      if (stream) {
-        stream.getTracks().forEach((t) => t.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
       }
 
       const mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -78,6 +79,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
         },
       });
 
+      streamRef.current = mediaStream;
       setStream(mediaStream);
       setPermissionStatus('granted');
 
@@ -93,6 +95,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       // Try audio-only fallback if video failed
       try {
         const audioOnlyStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        streamRef.current = audioOnlyStream;
         setStream(audioOnlyStream);
         setPermissionStatus('granted');
         setupAudioMeter(audioOnlyStream);
@@ -108,6 +111,11 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
     try {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
+
+      // Close previous audio context if still active
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close().catch(() => {});
+      }
 
       const audioCtx = new AudioCtx();
       audioContextRef.current = audioCtx;
@@ -127,7 +135,21 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
           sum += dataArray[i];
         }
         const avg = sum / dataArray.length;
-        setMicLevel(Math.min(100, Math.round((avg / 128) * 100)));
+        const level = Math.min(100, Math.round((avg / 128) * 100));
+
+        // High-performance direct DOM mutation without triggering React component tree re-renders at 60fps
+        if (micBarRef.current) {
+          micBarRef.current.style.width = `${Math.max(level, 8)}%`;
+          micBarRef.current.className = `h-full transition-all duration-75 ${
+            level > 50 ? 'bg-emerald-400' : level > 20 ? 'bg-brand-cyan' : 'bg-slate-500'
+          }`;
+        }
+        if (micIconRef.current) {
+          micIconRef.current.setAttribute(
+            'class',
+            `w-3.5 h-3.5 transition-colors ${level > 15 ? 'text-emerald-400' : 'text-slate-400'}`
+          );
+        }
         animationFrameRef.current = requestAnimationFrame(updateMeter);
       };
 
@@ -142,18 +164,22 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
     initMedia();
 
     return () => {
-      // Stop all tracks on unmount
-      if (stream) {
-        stream.getTracks().forEach((t) => t.stop());
+      // Stop all hardware tracks reliably via ref on unmount
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
       }
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
       }
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         audioContextRef.current.close().catch(() => {});
+        audioContextRef.current = null;
       }
     };
   }, []);
@@ -354,10 +380,11 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
   return (
     <div className="space-y-4">
       {recordingError && (
-        <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+        <div role="alert" aria-live="assertive" className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
           <span>{recordingError}</span>
           <button
             type="button"
+            aria-label="Dismiss recording error"
             onClick={() => setRecordingError(null)}
             className="text-xs font-bold text-rose-400 hover:text-rose-200 cursor-pointer ml-3 shrink-0"
           >
@@ -380,6 +407,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
               </p>
               <button
                 type="button"
+                aria-label="Retry camera and microphone permissions"
                 onClick={initMedia}
                 className="px-4 py-2 rounded-lg bg-dark-800 border border-slate-700 hover:border-brand-500 text-xs font-semibold text-white transition-colors cursor-pointer"
               >
@@ -435,13 +463,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
 
               {/* Real-time Microphone Indicator Overlay */}
               <div className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-dark-900/80 border border-slate-700/80 backdrop-blur-md">
-                <Volume2 className={`w-3.5 h-3.5 ${micLevel > 15 ? 'text-emerald-400' : 'text-slate-400'}`} />
+                <Volume2 ref={micIconRef} className="w-3.5 h-3.5 text-slate-400" />
                 <div className="w-16 h-1.5 bg-dark-800 rounded-full overflow-hidden flex items-center">
                   <div
-                    className={`h-full transition-all duration-75 ${
-                      micLevel > 50 ? 'bg-emerald-400' : micLevel > 20 ? 'bg-brand-cyan' : 'bg-slate-500'
-                    }`}
-                    style={{ width: `${Math.max(micLevel, 8)}%` }}
+                    ref={micBarRef}
+                    className="h-full bg-slate-500 transition-all duration-75"
+                    style={{ width: '8%' }}
                   />
                 </div>
               </div>
@@ -467,6 +494,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
               {!isRecording && !hasRecorded && (
                 <button
                   type="button"
+                  aria-label="Start recording answer"
                   onClick={startRecording}
                   disabled={isSubmitting}
                   className="btn-3d px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-lg shadow-rose-600/30 transition-all"
@@ -479,6 +507,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
               {isRecording && (
                 <button
                   type="button"
+                  aria-label="Stop recording answer"
                   onClick={stopRecording}
                   className="btn-3d px-5 py-2 rounded-xl bg-slate-100 hover:bg-white text-slate-950 text-xs font-bold flex items-center gap-2 cursor-pointer shadow-lg transition-all"
                 >
@@ -494,6 +523,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
                   </span>
                   <button
                     type="button"
+                    aria-label="Retake recording"
                     onClick={handleRetake}
                     disabled={isSubmitting}
                     className="px-3 py-1.5 rounded-lg bg-dark-800 hover:bg-dark-750 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
@@ -509,4 +539,4 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       </div>
     </div>
   );
-};
+});
