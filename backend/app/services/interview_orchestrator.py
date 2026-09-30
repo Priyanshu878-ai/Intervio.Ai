@@ -394,12 +394,35 @@ class InterviewOrchestrator:
                 )
                 next_q = adaptive_res["question"]
 
+        # Generate natural adaptive AI conversational response bridge & follow-up speech
+        from app.services.conversational_ai import (
+            generate_conversational_reaction,
+            format_conversational_question,
+        )
+
+        if is_completed:
+            contextual_response = (
+                "Thank you so much for completing your interview assessment today. "
+                "All your responses have been recorded, and your final performance report is now ready."
+            )
+        else:
+            contextual_response = generate_conversational_reaction(
+                question_text=question.question_text,
+                answer_text=effective_text or "",
+                analysis_res=analysis_res,
+                role=interview.role,
+            )
+
+        if next_q and next_q.question_text:
+            next_q.question_text = format_conversational_question(next_q.question_text)
+
         return {
             "interview_id": interview.id,
             "question_id": question_id,
             "analysis": analysis_res,
             "next_question": next_q,
             "adaptive_strategy": strategy,
+            "contextual_response": contextual_response,
             "is_completed": is_completed,
             "session_status": interview.status,
             "evidence_status": evidence_info,

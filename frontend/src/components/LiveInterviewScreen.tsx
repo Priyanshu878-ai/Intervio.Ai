@@ -13,6 +13,7 @@ import {
   QuestionResponse, 
   SubmitAnswerResponse 
 } from '../types/api';
+import { RealtimeInterviewRoom } from './interview/RealtimeInterviewRoom';
 import { CameraCapture } from './CameraCapture';
 
 interface LiveInterviewScreenProps {
@@ -26,6 +27,7 @@ interface LiveInterviewScreenProps {
   onComplete: () => void;
   isLoading: boolean;
   error?: string | null;
+  onQuit?: () => void;
 }
 
 export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
@@ -35,7 +37,9 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
   onComplete,
   isLoading,
   error,
+  onQuit,
 }) => {
+  const [viewMode, setViewMode] = useState<'realtime' | 'classic'>('realtime');
   const [answerText, setAnswerText] = useState('');
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -108,8 +112,60 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
 
   const wordCount = answerText.trim() ? answerText.trim().split(/\s+/).length : 0;
 
+  if (viewMode === 'realtime') {
+    return (
+      <div className="space-y-4">
+        <div className="max-w-5xl mx-auto px-4 pt-4 flex justify-end">
+          <div className="p-1 rounded-xl bg-dark-900 border border-slate-800 flex items-center gap-1 text-xs">
+            <button
+              onClick={() => setViewMode('realtime')}
+              className="px-3 py-1 rounded-lg bg-brand-500 text-white font-semibold cursor-pointer"
+            >
+              Real-Time AI Room
+            </button>
+            <button
+              onClick={() => setViewMode('classic')}
+              className="px-3 py-1 rounded-lg text-slate-400 hover:text-slate-200 font-medium cursor-pointer"
+            >
+              Classic View
+            </button>
+          </div>
+        </div>
+        <RealtimeInterviewRoom
+          session={session}
+          currentQuestion={currentQuestion}
+          onSubmitAnswer={async (text, audio, video) => {
+            return onSubmitAnswer(text, audio, video);
+          }}
+          onComplete={onComplete}
+          isLoading={isLoading}
+          error={error}
+          onQuit={onQuit}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
+      {/* View Mode Pill Selector */}
+      <div className="flex items-center justify-end mb-4">
+        <div className="p-1 rounded-xl bg-dark-900 border border-slate-800 flex items-center gap-1 text-xs">
+          <button
+            onClick={() => setViewMode('realtime')}
+            className="px-3 py-1 rounded-lg text-slate-400 hover:text-slate-200 font-medium cursor-pointer"
+          >
+            Real-Time AI Room
+          </button>
+          <button
+            onClick={() => setViewMode('classic')}
+            className="px-3 py-1 rounded-lg bg-brand-500 text-white font-semibold cursor-pointer"
+          >
+            Classic View
+          </button>
+        </div>
+      </div>
+
       {/* Top Session Progress Bar */}
       <div className="card-3d p-4 sm:p-5 mb-6">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-3 text-xs text-slate-300">

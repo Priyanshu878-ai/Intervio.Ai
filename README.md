@@ -113,7 +113,7 @@ Use standardized commit prefixes to convey the type of change:
 
 ## 🚀 Development Roadmap
 
-- [x] **Phase 0: Foundation & Architecture Setup**
+- [ ] **Phase 0: Foundation & Architecture Setup**
   - Monorepo structure, documentation, `.gitignore`, and `.env.example`.
 - [ ] **Phase 1: Database Schemas & Data Layer**
   - Define PostgreSQL models (Users, Interviews, Questions, Sessions, Multimodal Transcripts, Scores).

@@ -401,6 +401,7 @@ export const App: React.FC = () => {
                 onComplete={handleComplete}
                 isLoading={isLoading}
                 error={error}
+                onQuit={handleQuitInterview}
               />
             )}
 

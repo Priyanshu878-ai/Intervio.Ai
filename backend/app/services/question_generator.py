@@ -322,27 +322,33 @@ class QuestionGenerator:
         tech_pool = role_data.get("technical", [])
         beh_pool = role_data.get("behavioral", [])
 
-        # Filter candidates by excluded texts
-        available_tech = [q for q in tech_pool if q["text"] not in exclude_texts]
-        available_beh = [q for q in beh_pool if q["text"] not in exclude_texts]
+        # Filter candidates by excluded texts and shuffle to ensure non-scripted, varied sequence per interview
+        available_tech = [dict(q) for q in tech_pool if q["text"] not in exclude_texts]
+        available_beh = [dict(q) for q in beh_pool if q["text"] not in exclude_texts]
+        random.shuffle(available_tech)
+        random.shuffle(available_beh)
 
         # If current pool is exhausted, cascade to other difficulties and then to fallback pool
         if not available_tech and not available_beh:
             if role_key in QUESTION_BANK:
                 for alt_d in ["medium", "easy", "hard"]:
                     alt_data = QUESTION_BANK[role_key].get(alt_d, {})
-                    alt_t = [q for q in alt_data.get("technical", []) if q["text"] not in exclude_texts]
-                    alt_b = [q for q in alt_data.get("behavioral", []) if q["text"] not in exclude_texts]
+                    alt_t = [dict(q) for q in alt_data.get("technical", []) if q["text"] not in exclude_texts]
+                    alt_b = [dict(q) for q in alt_data.get("behavioral", []) if q["text"] not in exclude_texts]
                     if alt_t or alt_b:
+                        random.shuffle(alt_t)
+                        random.shuffle(alt_b)
                         available_tech, available_beh = alt_t, alt_b
                         break
 
             if not available_tech and not available_beh:
                 for alt_d in ["medium", "easy", "hard"]:
                     alt_data = FALLBACK_QUESTIONS.get(alt_d, {})
-                    alt_t = [q for q in alt_data.get("technical", []) if q["text"] not in exclude_texts]
-                    alt_b = [q for q in alt_data.get("behavioral", []) if q["text"] not in exclude_texts]
+                    alt_t = [dict(q) for q in alt_data.get("technical", []) if q["text"] not in exclude_texts]
+                    alt_b = [dict(q) for q in alt_data.get("behavioral", []) if q["text"] not in exclude_texts]
                     if alt_t or alt_b:
+                        random.shuffle(alt_t)
+                        random.shuffle(alt_b)
                         available_tech, available_beh = alt_t, alt_b
                         break
 

@@ -124,6 +124,7 @@ export interface SubmitAnswerResponse {
   analysis: MultimodalAnalysisResponse;
   next_question: QuestionResponse | null;
   adaptive_strategy?: AdaptiveStrategyResponse | Record<string, any> | null;
+  contextual_response?: string | null;
   is_completed: boolean;
   session_status: string;
 }

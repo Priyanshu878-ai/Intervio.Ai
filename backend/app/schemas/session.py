@@ -30,6 +30,7 @@ class SubmitAnswerResponse(BaseModel):
     analysis: MultimodalAnalysisResponse
     next_question: Optional[QuestionResponse] = None
     adaptive_strategy: Optional[dict[str, Any]] = None
+    contextual_response: Optional[str] = None
     is_completed: bool
     session_status: str
 
