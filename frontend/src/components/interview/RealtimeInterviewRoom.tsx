@@ -89,6 +89,69 @@ export const RealtimeInterviewRoom: React.FC<RealtimeInterviewRoomProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const roomContainerRef = useRef<HTMLDivElement | null>(null);
   const recognitionRef = useRef<any>(null);
+  const preferredVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
+
+  // Helper to pick the best natural English voice available
+  const selectBestVoice = useCallback(() => {
+    if (!('speechSynthesis' in window)) return null;
+    const voices = window.speechSynthesis.getVoices();
+    if (!voices || voices.length === 0) return null;
+
+    // 1. Try Google US English or Google UK English
+    let selected = voices.find(
+      (v) => v.name.includes('Google US English') || v.name.includes('Google UK English')
+    );
+
+    // 2. Try Microsoft Natural / Online English voices
+    if (!selected) {
+      selected = voices.find(
+        (v) =>
+          (v.name.includes('Natural') || v.name.includes('Online')) &&
+          (v.lang.startsWith('en-US') || v.lang.startsWith('en-GB') || v.lang.startsWith('en'))
+      );
+    }
+
+    // 3. Try macOS / iOS natural voices (Samantha, Alex, Karen, Daniel)
+    if (!selected) {
+      selected = voices.find(
+        (v) =>
+          ['Samantha', 'Alex', 'Karen', 'Daniel', 'Victoria', 'Fiona'].some((name) =>
+            v.name.includes(name)
+          ) && v.lang.startsWith('en')
+      );
+    }
+
+    // 4. Try any en-US voice
+    if (!selected) {
+      selected = voices.find((v) => v.lang === 'en-US');
+    }
+
+    // 5. Try any English voice
+    if (!selected) {
+      selected = voices.find((v) => v.lang.startsWith('en'));
+    }
+
+    preferredVoiceRef.current = selected || voices[0] || null;
+    return preferredVoiceRef.current;
+  }, []);
+
+  // Populate voices on mount & handle Chrome onvoiceschanged async event
+  useEffect(() => {
+    if (!('speechSynthesis' in window)) return;
+
+    selectBestVoice();
+
+    const handleVoicesChanged = () => {
+      selectBestVoice();
+    };
+
+    window.speechSynthesis.onvoiceschanged = handleVoicesChanged;
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, [selectBestVoice]);
 
   // Check STT Browser Support on Mount
   useEffect(() => {
@@ -104,8 +167,7 @@ export const RealtimeInterviewRoom: React.FC<RealtimeInterviewRoomProps> = ({
     setVoiceState('ai_speaking');
 
     if (!('speechSynthesis' in window) || isAudioMuted) {
-      // Fallback timer if TTS is unsupported or muted
-      const durationMs = Math.max(1500, text.length * 50);
+      const durationMs = Math.max(1500, text.length * 45);
       const timer = setTimeout(() => {
         if (onEnd) onEnd();
       }, durationMs);
@@ -113,18 +175,33 @@ export const RealtimeInterviewRoom: React.FC<RealtimeInterviewRoomProps> = ({
     }
 
     try {
-      window.speechSynthesis.cancel(); // Clear any ongoing utterance
+      window.speechSynthesis.cancel(); // Clear any ongoing or queued utterances
+
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.0;
+      utterance.rate = 1.08; // Natural conversational cadence (1.05 - 1.1)
       utterance.pitch = 1.0;
+      utterance.volume = 1.0; // Clear maximum volume
+
+      const voice = preferredVoiceRef.current || selectBestVoice();
+      if (voice) {
+        utterance.voice = voice;
+      }
+
+      let isCompleted = false;
 
       utterance.onend = () => {
-        if (onEnd) onEnd();
+        if (!isCompleted) {
+          isCompleted = true;
+          if (onEnd) onEnd();
+        }
       };
 
       utterance.onerror = (err) => {
         console.warn('SpeechSynthesis error:', err);
-        if (onEnd) onEnd();
+        if (!isCompleted) {
+          isCompleted = true;
+          if (onEnd) onEnd();
+        }
       };
 
       window.speechSynthesis.speak(utterance);
@@ -132,7 +209,7 @@ export const RealtimeInterviewRoom: React.FC<RealtimeInterviewRoomProps> = ({
       console.warn('SpeechSynthesis failed:', e);
       if (onEnd) onEnd();
     }
-  }, [isAudioMuted]);
+  }, [isAudioMuted, selectBestVoice]);
 
   // Stop TTS Audio
   const stopTTS = useCallback(() => {
