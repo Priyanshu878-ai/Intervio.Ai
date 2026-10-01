@@ -1,4 +1,4 @@
-﻿"""
+"""
 Interview Final Report & Analytics Engine for Intervio.Ai.
 Aggregates complete interview performance from existing Answer and Evaluation data,
 deriving overall, technical, text, audio, and visual analytics, progression curves,
@@ -279,95 +279,124 @@ class InterviewReportService:
                 }
             )
 
-        # 8. Strengths and Improvement Areas
+        # Extract demonstrated technical concepts & candidate answer highlights
+        demonstrated_topics: List[str] = []
+        for q in answered_questions:
+            if q.answer and q.answer.answer_text:
+                txt = q.answer.answer_text.strip()
+                from app.services.conversational_ai import extract_key_phrase
+                phrase = extract_key_phrase(txt, fallback="")
+                if phrase and phrase not in demonstrated_topics:
+                    demonstrated_topics.append(phrase)
+
+        primary_topic = demonstrated_topics[0] if demonstrated_topics else interview.role
+
+        # 8. Natural Strengths and Improvement Areas
         strengths: List[str] = []
         improvement_areas: List[str] = []
 
         if avg_overall_score is not None:
             if avg_overall_score >= 75.0:
-                strengths.append(
-                    "High overall performance demonstrating readiness for the target role."
-                )
+                if demonstrated_topics:
+                    strengths.append(
+                        f"You explained {primary_topic} clearly and connected it to practical engineering trade-offs."
+                    )
+                else:
+                    strengths.append(
+                        f"You communicated core concepts clearly and structured your explanations with solid technical logic for the {interview.role} role."
+                    )
             elif avg_overall_score >= 50.0:
                 strengths.append(
-                    "Consistent baseline competency across evaluated interview questions."
+                    f"You covered fundamental concepts in {primary_topic} well, providing relevant context in your answers."
                 )
 
-            if avg_relevance and avg_relevance >= 75.0:
+            if avg_relevance and avg_relevance >= 70.0:
                 strengths.append(
-                    "Consistently direct, on-target answers addressing question prompts."
+                    "Your responses stayed directly focused on the main problem statement without unnecessary tangents."
                 )
             if avg_tech_score and avg_tech_score >= 70.0:
                 strengths.append(
-                    "Accurate technical terminology and clear grasp of system mechanics."
-                )
-            if avg_completeness and avg_completeness >= 70.0:
-                strengths.append(
-                    "Structured and comprehensive responses with thorough coverage."
+                    "You demonstrated accurate domain terminology and a clear understanding of underlying system mechanics."
                 )
             if avg_communication and avg_communication >= 70.0:
                 strengths.append(
-                    "Clear written communication and articulate reasoning."
+                    "You articulated your reasoning with clear structure and steady pacing."
+                )
+
+            if audio_count > 0 or video_count > 0:
+                strengths.append(
+                    "Your spoken responses were delivered with confident pacing during live video recording."
                 )
 
             # Improvement Areas
             if avg_overall_score < 50.0:
                 improvement_areas.append(
-                    "Overall responses require greater depth and precision to meet expectations."
+                    f"Focus on strengthening core technical foundations in {interview.role}, incorporating step-by-step reasoning."
                 )
             if avg_relevance and avg_relevance < 50.0:
                 improvement_areas.append(
-                    "Align answers more directly with the core problem statement before expanding."
+                    "Make sure to address the specific core prompt directly before expanding into secondary details."
                 )
-            if avg_tech_score and avg_tech_score < 50.0:
+            if avg_tech_score and avg_tech_score < 70.0:
                 improvement_areas.append(
-                    "Deepen technical foundations and incorporate domain-specific frameworks/methods."
+                    f"Consider expanding your technical explanations with concrete architecture trade-offs when discussing {primary_topic}."
                 )
-            if avg_completeness and avg_completeness < 50.0:
+            if avg_completeness and avg_completeness < 70.0:
                 improvement_areas.append(
-                    "Expand answers beyond high-level summaries to include concrete technical details."
+                    "Try elaborating on your answers with specific implementation examples rather than high-level summaries."
                 )
             if avg_communication and avg_communication < 50.0:
                 improvement_areas.append(
-                    "Organize answers with clearer structure and step-by-step logic."
+                    "Organize long answers into logical steps to make your technical thought process easier to follow."
                 )
 
         if total_unanswered > 0:
             improvement_areas.append(
-                f"Complete the remaining {total_unanswered} unanswered question(s) in this interview."
+                f"Complete the remaining {total_unanswered} question(s) in your session to receive a comprehensive evaluation."
             )
 
         if not strengths:
             if total_answered > 0:
-                strengths.append("Completed questions across scheduled interview topics.")
+                strengths.append("Answered scheduled technical questions thoughtfully across the session.")
             else:
                 strengths.append("No answers submitted yet to evaluate strengths.")
 
         if not improvement_areas:
             improvement_areas.append(
-                "Maintain current technical depth and structured communication delivery."
+                "Maintain your current technical depth and continue detailing practical engineering trade-offs in future interviews."
             )
 
-        # 9. Deterministic Final Summary
+        # 9. Natural Interviewer Final Summary
         if total_questions == 0:
             final_summary = f"Interview '{interview_id}' has no questions created."
         elif total_answered == 0:
             final_summary = (
-                f"Interview for candidate '{candidate.name}' ({interview.role}, {interview.difficulty} difficulty) "
-                f"has not been started yet. 0 of {total_questions} questions have been answered."
+                f"{candidate.name} has registered for the {interview.role} assessment ({interview.difficulty} difficulty). "
+                f"The session has not yet started."
             )
         elif total_unanswered > 0:
             final_summary = (
-                f"Interview for candidate '{candidate.name}' ({interview.role}, {interview.difficulty} difficulty) "
-                f"is in progress with {total_answered}/{total_questions} questions answered ({completion_pct}%). "
-                f"The candidate's current average score is {avg_overall_score} ({overall_perf_level})."
+                f"{candidate.name} is currently progressing through the {interview.role} interview at {interview.difficulty} difficulty. "
+                f"They have completed {total_answered} of {total_questions} questions so far, demonstrating steady engagement."
             )
         else:
-            final_summary = (
-                f"Interview completed for candidate '{candidate.name}' ({interview.role}, {interview.difficulty} difficulty). "
-                f"Candidate completed all {total_questions} questions, achieving an overall score of {avg_overall_score} ({overall_perf_level}). "
-                f"Breakdown: {strong_count} strong, {average_count} average, and {weak_count} weak responses."
-            )
+            if avg_overall_score and avg_overall_score >= 75.0:
+                final_summary = (
+                    f"{candidate.name} delivered a strong technical assessment for the {interview.role} role at {interview.difficulty} difficulty. "
+                    f"They answered all {total_questions} questions with clear structure, demonstrating solid command of {primary_topic}. "
+                    f"Continuing to highlight specific architectural trade-offs will further solidify their technical depth."
+                )
+            elif avg_overall_score and avg_overall_score >= 50.0:
+                final_summary = (
+                    f"{candidate.name} completed the {interview.role} assessment at {interview.difficulty} difficulty across all {total_questions} questions. "
+                    f"They covered fundamental concepts like {primary_topic} well. "
+                    f"Elaborating with more concrete implementation details and edge-case handling will help elevate their technical responses."
+                )
+            else:
+                final_summary = (
+                    f"{candidate.name} completed {total_questions} questions in the {interview.role} interview. "
+                    f"While they engaged with each topic, building deeper foundational knowledge in {primary_topic} and practicing structured problem-solving will significantly improve response quality."
+                )
 
         return {
             "interview_summary": {
