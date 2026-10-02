@@ -35,3 +35,15 @@ class SubmitAnswerResponse(BaseModel):
     session_status: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class RealtimeSessionResponse(BaseModel):
+    client_secret: Optional[str] = None
+    expires_at: Optional[int] = None
+    model: str = "gpt-4o-realtime-preview-2024-12-17"
+    voice: str = "alloy"
+    session_id: Optional[str] = None
+    error: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+

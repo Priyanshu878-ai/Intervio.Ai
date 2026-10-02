@@ -106,6 +106,21 @@ def detect_conversational_intent(text: str) -> Optional[str]:
     if any(pattern in cleaned for pattern in confused_patterns):
         return "confused"
 
+    # 5. Don't know / Uncertainty acknowledgment
+    dont_know_patterns = [
+        "i don't know",
+        "i dont know",
+        "i do not know",
+        "i'm not sure",
+        "im not sure",
+        "no idea",
+        "not really sure",
+        "don't recall",
+        "cannot recall"
+    ]
+    if any(pattern in cleaned for pattern in dont_know_patterns):
+        return "dont_know"
+
     return None
 
 

@@ -25,6 +25,7 @@ import {
   QuestionResponse,
   SubmitAnswerResponse
 } from '../../types/api';
+import { api } from '../../services/api';
 
 interface ViolationLog {
   id: string;
@@ -85,11 +86,193 @@ export const RealtimeInterviewRoom: React.FC<RealtimeInterviewRoomProps> = ({
   const [elapsedSec, setElapsedSec] = useState(0);
   const [transitioning, setTransitioning] = useState<'none' | 'next_question' | 'completing'>('none');
 
-  // DOM & Speech Refs
+  // DOM & Speech & WebRTC Refs
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const roomContainerRef = useRef<HTMLDivElement | null>(null);
   const recognitionRef = useRef<any>(null);
   const preferredVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
+
+  // OpenAI Realtime WebRTC state & refs
+  const [useRealtimeWebRTC, setUseRealtimeWebRTC] = useState<boolean>(false);
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const dataChannelRef = useRef<RTCDataChannel | null>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const disconnectWebRTC = useCallback(() => {
+    if (dataChannelRef.current) {
+      try { dataChannelRef.current.close(); } catch {}
+      dataChannelRef.current = null;
+    }
+    if (peerConnectionRef.current) {
+      try { peerConnectionRef.current.close(); } catch {}
+      peerConnectionRef.current = null;
+    }
+    if (remoteAudioRef.current) {
+      try {
+        remoteAudioRef.current.pause();
+        remoteAudioRef.current.srcObject = null;
+      } catch {}
+      remoteAudioRef.current = null;
+    }
+    setUseRealtimeWebRTC(false);
+  }, []);
+
+  const connectOpenAIRealtime = useCallback(async (clientSecret: string) => {
+    try {
+      const pc = new RTCPeerConnection();
+      peerConnectionRef.current = pc;
+
+      if (!remoteAudioRef.current) {
+        const audio = document.createElement('audio');
+        audio.autoplay = true;
+        remoteAudioRef.current = audio;
+      }
+
+      pc.ontrack = (e) => {
+        if (remoteAudioRef.current && e.streams[0]) {
+          remoteAudioRef.current.srcObject = e.streams[0];
+        }
+      };
+
+      if (stream) {
+        stream.getAudioTracks().forEach((track) => {
+          pc.addTrack(track, stream);
+        });
+      } else {
+        const localMic = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setStream(localMic);
+        localMic.getAudioTracks().forEach((track) => {
+          pc.addTrack(track, localMic);
+        });
+      }
+
+      const dc = pc.createDataChannel('oai-events');
+      dataChannelRef.current = dc;
+
+      dc.onopen = () => {
+        console.log('OpenAI Realtime DataChannel connected via WebRTC.');
+        setUseRealtimeWebRTC(true);
+
+        // Configure VAD turn-taking over DataChannel
+        const sessionUpdate = {
+          type: 'session.update',
+          session: {
+            turn_detection: {
+              type: 'server_vad',
+              threshold: 0.5,
+              prefix_padding_ms: 300,
+              silence_duration_ms: 500,
+              create_response: true,
+            },
+            input_audio_transcription: {
+              model: 'whisper-1',
+            },
+          },
+        };
+        dc.send(JSON.stringify(sessionUpdate));
+      };
+
+      dc.onmessage = (e) => {
+        try {
+          const event = JSON.parse(e.data);
+
+          // 1. Candidate Interruption Detection (candidate speaks while AI speaks)
+          if (event.type === 'input_audio_buffer.speech_started') {
+            console.log('Interruption detected: candidate started speaking.');
+            if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
+              dataChannelRef.current.send(JSON.stringify({ type: 'response.cancel' }));
+            }
+            if (remoteAudioRef.current) {
+              remoteAudioRef.current.pause();
+              remoteAudioRef.current.currentTime = 0;
+            }
+            setVoiceState('listening');
+            setAiSpeechText('');
+          }
+
+          // 2. Candidate Speech End Detection (candidate stops speaking)
+          if (event.type === 'input_audio_buffer.speech_stopped') {
+            console.log('Candidate finished turn: speech_stopped received.');
+            setVoiceState('processing');
+          }
+
+          // 3. Candidate Speech Transcript Completed
+          if (event.type === 'conversation.item.input_audio_transcription.completed') {
+            const transcript = event.transcript || '';
+            if (transcript.trim()) {
+              setAnswerText((prev) => (prev ? `${prev} ${transcript.trim()}` : transcript.trim()));
+            }
+          }
+
+          // 4. Response Turn Lifecycle
+          if (event.type === 'response.created') {
+            setVoiceState('ai_speaking');
+            setAiSpeechText('');
+          } else if (event.type === 'response.audio.delta') {
+            setVoiceState('ai_speaking');
+            if (remoteAudioRef.current) {
+              remoteAudioRef.current.play().catch(() => {});
+            }
+          } else if (event.type === 'response.audio_transcript.delta') {
+            setAiSpeechText((prev) => prev + (event.delta || ''));
+          } else if (event.type === 'response.done') {
+            setVoiceState('listening');
+          }
+        } catch (err) {
+          console.warn('Realtime event parse error:', err);
+        }
+      };
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      const response = await fetch('https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17', {
+        method: 'POST',
+        body: offer.sdp,
+        headers: {
+          Authorization: `Bearer ${clientSecret}`,
+          'Content-Type': 'application/sdp',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI Realtime WebRTC connection failed: ${response.status}`);
+      }
+
+      const answerSdp = await response.text();
+      await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
+      setUseRealtimeWebRTC(true);
+    } catch (err) {
+      console.warn('WebRTC OpenAI Realtime connection failed. Falling back to browser Speech synthesis/recognition.', err);
+      setUseRealtimeWebRTC(false);
+    }
+  }, [stream]);
+
+  const syncRealtimeSessionContext = useCallback((questionText: string, seq: number, total: number) => {
+    if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
+      try {
+        const updateMsg = {
+          type: 'session.update',
+          session: {
+            instructions: `You are Intervio.Ai conducting a live technical interview for the ${session.role} role (${session.difficulty} level). Current active question #${seq} of ${total}: "${questionText}". Maintain full awareness of candidate answers and never repeat a question unless requested.`,
+          },
+        };
+        dataChannelRef.current.send(JSON.stringify(updateMsg));
+      } catch (err) {
+        console.warn('Failed to sync Realtime session context:', err);
+      }
+    }
+  }, [session.role, session.difficulty]);
+
+  useEffect(() => {
+    if (useRealtimeWebRTC && currentQuestion) {
+      syncRealtimeSessionContext(
+        currentQuestion.question_text,
+        currentQuestion.sequence_number || session.answered_questions + 1,
+        session.total_questions || 1
+      );
+    }
+  }, [currentQuestion, useRealtimeWebRTC, syncRealtimeSessionContext, session.answered_questions, session.total_questions]);
 
   // Helper to pick the best natural English voice available
   const selectBestVoice = useCallback(() => {
@@ -166,6 +349,33 @@ export const RealtimeInterviewRoom: React.FC<RealtimeInterviewRoomProps> = ({
     setAiSpeechText(text);
     setVoiceState('ai_speaking');
 
+    if (useRealtimeWebRTC) {
+      if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
+        try {
+          const itemEvent = {
+            type: 'conversation.item.create',
+            item: {
+              type: 'message',
+              role: 'user',
+              content: [
+                {
+                  type: 'input_text',
+                  text: `Interviewer Prompt: ${text}`,
+                },
+              ],
+            },
+          };
+          const responseEvent = { type: 'response.create' };
+          dataChannelRef.current.send(JSON.stringify(itemEvent));
+          dataChannelRef.current.send(JSON.stringify(responseEvent));
+        } catch (err) {
+          console.warn('DataChannel send prompt failed:', err);
+        }
+      }
+      if (onEnd) onEnd();
+      return;
+    }
+
     if (!('speechSynthesis' in window) || isAudioMuted) {
       const durationMs = Math.max(1500, text.length * 45);
       const timer = setTimeout(() => {
@@ -209,17 +419,25 @@ export const RealtimeInterviewRoom: React.FC<RealtimeInterviewRoomProps> = ({
       console.warn('SpeechSynthesis failed:', e);
       if (onEnd) onEnd();
     }
-  }, [isAudioMuted, selectBestVoice]);
+  }, [isAudioMuted, selectBestVoice, useRealtimeWebRTC]);
 
   // Stop TTS Audio
   const stopTTS = useCallback(() => {
+    if (useRealtimeWebRTC && dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
+      try { dataChannelRef.current.send(JSON.stringify({ type: 'response.cancel' })); } catch {}
+    }
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
-  }, []);
+  }, [useRealtimeWebRTC]);
 
   // 2. Speech-to-Text (STT) Engine Helper
   const startListening = useCallback(() => {
+    if (useRealtimeWebRTC) {
+      setVoiceState('listening');
+      return;
+    }
+
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setVoiceState('idle');
@@ -269,7 +487,7 @@ export const RealtimeInterviewRoom: React.FC<RealtimeInterviewRoomProps> = ({
       console.warn('Failed to start SpeechRecognition:', err);
       setVoiceState('idle');
     }
-  }, [answerText]);
+  }, [answerText, useRealtimeWebRTC]);
 
   // Stop STT Helper
   const stopListening = useCallback(() => {
@@ -311,6 +529,7 @@ export const RealtimeInterviewRoom: React.FC<RealtimeInterviewRoomProps> = ({
 
   // Media Stream Cleanup
   const stopMediaStream = useCallback(() => {
+    disconnectWebRTC();
     stopTTS();
     stopListening();
     if (stream) {
@@ -322,7 +541,7 @@ export const RealtimeInterviewRoom: React.FC<RealtimeInterviewRoomProps> = ({
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-  }, [stream, stopTTS, stopListening]);
+  }, [stream, stopTTS, stopListening, disconnectWebRTC]);
 
   // Clean stream & speech cleanup on unmount
   useEffect(() => {
@@ -419,6 +638,16 @@ export const RealtimeInterviewRoom: React.FC<RealtimeInterviewRoomProps> = ({
 
     setIsStarted(true);
     setIsFullscreen(Boolean(document.fullscreenElement));
+
+    // Establish OpenAI Realtime Session over WebRTC using ephemeral client token
+    try {
+      const sessionRes = await api.createRealtimeSession(session.interview_id);
+      if (sessionRes && sessionRes.client_secret) {
+        await connectOpenAIRealtime(sessionRes.client_secret);
+      }
+    } catch (err) {
+      console.warn('Could not establish OpenAI Realtime WebRTC session token, falling back to Web Speech:', err);
+    }
 
     // Natural Voice Intro Sequence
     const introSpeech = `Welcome to your AI interview for the ${session.role} role. I will be asking your technical questions today. Let's begin.`;
@@ -687,7 +916,7 @@ export const RealtimeInterviewRoom: React.FC<RealtimeInterviewRoomProps> = ({
                   <span>AI Interviewer Avatar</span>
                 </span>
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-                  {sttSupported ? 'Speech STT Active' : 'Text Input Mode'}
+                  {useRealtimeWebRTC ? 'OpenAI Realtime WebRTC' : sttSupported ? 'Speech STT Active' : 'Text Input Mode'}
                 </span>
               </div>
 

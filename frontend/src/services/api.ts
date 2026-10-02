@@ -7,6 +7,7 @@ import {
   QuestionResponse,
   InterviewSessionResponse,
   SubmitAnswerResponse,
+  RealtimeSessionResponse,
   FinalInterviewReport,
   RegisterRequest,
   LoginRequest,
@@ -206,5 +207,13 @@ export const api = {
       headers: getAuthHeaders(),
     });
     return handleResponse<FinalInterviewReport>(res);
+  },
+
+  async createRealtimeSession(interviewId: string): Promise<RealtimeSessionResponse> {
+    const res = await fetch(`${API_BASE}/interviews/${interviewId}/realtime-session`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<RealtimeSessionResponse>(res);
   },
 };

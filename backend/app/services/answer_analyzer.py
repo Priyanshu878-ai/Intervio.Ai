@@ -90,30 +90,62 @@ class AnswerAnalyzer:
         question_keywords = self._extract_keywords(question_text)
 
         word_count = len(answer_tokens)
-        if word_count == 0:
+
+        # 1. No Answer Handling
+        if word_count < 2:
             return {
                 "relevance_score": 0.0,
                 "technical_score": 0.0,
                 "completeness_score": 0.0,
                 "communication_score": 0.0,
                 "overall_score": 0.0,
-                "performance_level": "weak",
-                "feedback": "No answer provided.",
+                "performance_level": "no_answer",
+                "feedback": "No answer was provided for this question.",
+                "correctness": 0.0,
+                "relevance": 0.0,
+                "completeness": 0.0,
+                "confidence": 0.0,
             }
 
-        # 1. Deterministic Keyword Relevance Calculation
-        if question_keywords:
-            overlap = question_keywords & answer_keywords
-            overlap_ratio = len(overlap) / len(question_keywords)
-            keyword_relevance = min(100.0, (overlap_ratio * 70.0) + (30.0 if len(overlap) > 0 else 10.0))
-        else:
-            keyword_relevance = 70.0
+        # Extract question & answer concepts
+        question_topic = list(question_keywords)[0].lower() if question_keywords else "the topic"
 
-        # 2. Transformer Semantic Relevance Calculation
+        # 2. Off-Topic Detection (no arbitrary positive score for off-topic answers!)
+        off_topic_words = {"pizza", "food", "weather", "movie", "game", "vacation", "music", "restaurant"}
+        cleaned_lower = cleaned_answer.lower()
+        contains_off_topic_word = any(w in answer_tokens for w in off_topic_words)
+
+        overlap = question_keywords & answer_keywords if question_keywords else set()
+        overlap_ratio = len(overlap) / len(question_keywords) if question_keywords else 0.5
+
         semantic_score = semantic_analyzer.compute_semantic_score(
             question_text=question_text,
             answer_text=cleaned_answer,
         )
+
+        is_off_topic = contains_off_topic_word or (len(overlap) == 0 and (semantic_score is None or semantic_score < 35.0))
+
+        if is_off_topic:
+            return {
+                "relevance_score": 5.0,
+                "technical_score": 0.0,
+                "completeness_score": 10.0,
+                "communication_score": 50.0,
+                "overall_score": 10.0,  # Zero arbitrary positive score!
+                "performance_level": "off_topic",
+                "feedback": f"Response is off-topic and does not address {question_topic}.",
+                "correctness": 0.0,
+                "relevance": 5.0,
+                "completeness": 10.0,
+                "confidence": 50.0,
+            }
+
+        # 3. Unclear / Doubtful markers
+        unclear_phrases = ["not sure", "dont know", "don't know", "no idea", "forget"]
+        is_unclear = any(p in cleaned_lower for p in unclear_phrases)
+
+        # 4. Standard Dimension Metrics (Correctness, Relevance, Completeness, Confidence)
+        keyword_relevance = min(100.0, (overlap_ratio * 70.0) + (30.0 if len(overlap) > 0 else 0.0))
 
         if semantic_score is not None:
             relevance_score = round(
@@ -124,7 +156,7 @@ class AnswerAnalyzer:
         else:
             relevance_score = round(keyword_relevance, 1)
 
-        # 3. Completeness Score Calculation
+        # Completeness calculation
         unique_ratio = len(set(answer_tokens)) / float(word_count)
         if word_count < 10:
             length_score = (word_count / 10.0) * 40.0
@@ -135,7 +167,7 @@ class AnswerAnalyzer:
 
         completeness_score = min(100.0, length_score * unique_ratio)
 
-        # 4. Technical Score Calculation
+        # Technical correctness & domain concept coverage
         normalized_role = role.lower().strip().replace("-", "_").replace(" ", "_")
         domain_keywords = ROLE_KEYWORDS.get(normalized_role, ROLE_KEYWORDS.get("full_stack", set()))
         combined_target_keywords = question_keywords | domain_keywords
@@ -147,24 +179,26 @@ class AnswerAnalyzer:
         else:
             technical_score = 50.0
 
-        # 5. Communication Score Calculation
+        correctness_score = round((technical_score * 0.6) + (relevance_score * 0.4), 1)
+
+        # Communication / Confidence score
         sentences = [s for s in re.split(r"[.!?]+", cleaned_answer) if s.strip()]
         sentence_count = max(1, len(sentences))
-
         filler_count = sum(1 for w in answer_tokens if w in FILLER_WORDS)
         filler_ratio = filler_count / float(word_count)
 
         comm_score = 80.0
         if sentence_count == 1 and word_count > 30:
-            comm_score -= 15.0  # Run-on sentence penalty
+            comm_score -= 15.0
         if filler_ratio > 0.05:
-            comm_score -= min(30.0, filler_ratio * 200.0)  # Filler word penalty
+            comm_score -= min(30.0, filler_ratio * 200.0)
         if unique_ratio < 0.4:
-            comm_score -= 20.0  # Repetition penalty
+            comm_score -= 20.0
 
         communication_score = max(10.0, min(100.0, comm_score))
+        confidence_score = communication_score
 
-        # 6. Weighted Overall Score
+        # Overall weighted score
         overall_score = round(
             (WEIGHTS["relevance"] * relevance_score)
             + (WEIGHTS["technical"] * technical_score)
@@ -173,45 +207,29 @@ class AnswerAnalyzer:
             1,
         )
 
-        # 7. Performance Level Categorization
-        if overall_score >= 75.0:
+        # Performance Level Categorization: strong, partial, weak, incorrect, off_topic, no_answer
+        if semantic_score is not None and semantic_score < 30.0 and len(matched_tech) == 0:
+            performance_level = "incorrect"
+            overall_score = min(25.0, overall_score)
+        elif is_unclear:
+            performance_level = "weak"
+            overall_score = min(45.0, overall_score)
+        elif overall_score >= 75.0:
             performance_level = "strong"
         elif overall_score >= 50.0:
-            performance_level = "average"
+            performance_level = "partial"
         else:
             performance_level = "weak"
 
-        # 8. Explainable Feedback Generation
-        feedback_points: List[str] = []
-        if semantic_score is not None and semantic_score >= 75.0:
-            feedback_points.append("Strong semantic relevance to the question context.")
-        elif semantic_score is not None and semantic_score < 45.0:
-            feedback_points.append("Low semantic similarity to the question prompt.")
-        elif relevance_score >= 75.0:
-            feedback_points.append("Directly addresses key concepts in the question.")
+        # 1-2 sentence explainable feedback
+        if performance_level == "strong":
+            feedback_summary = f"You provided a strong, technically accurate response explaining {question_topic} clearly."
+        elif performance_level == "partial":
+            feedback_summary = f"Good baseline explanation of {question_topic}, though adding key trade-offs would strengthen your response."
+        elif performance_level == "incorrect":
+            feedback_summary = f"Your response contained technical inaccuracies regarding {question_topic}."
         else:
-            feedback_points.append("Response lacks clear alignment with the core question keywords.")
-
-        if technical_score >= 75.0:
-            feedback_points.append(f"Demonstrates strong domain terminology ({', '.join(list(matched_tech)[:3])}).")
-        elif technical_score < 50.0:
-            feedback_points.append("Limited technical depth and domain keyword usage.")
-
-        if word_count < 10:
-            feedback_points.append("Answer is very short; consider providing a more detailed response.")
-        elif completeness_score < 50.0:
-            feedback_points.append("Answer lacks sufficient detail or structural completeness.")
-
-        if unique_ratio < 0.4:
-            feedback_points.append("High word repetition detected in text structure.")
-
-        if filler_ratio > 0.05:
-            feedback_points.append("Noticeable filler words detected in written text.")
-
-        if not feedback_points:
-            feedback_points.append("Balanced answer covering basic concepts adequately.")
-
-        feedback_summary = " ".join(feedback_points)
+            feedback_summary = f"Your response on {question_topic} was limited in technical depth. Focus on core mechanics."
 
         return {
             "relevance_score": round(relevance_score, 1),
@@ -221,6 +239,10 @@ class AnswerAnalyzer:
             "overall_score": overall_score,
             "performance_level": performance_level,
             "feedback": feedback_summary,
+            "correctness": correctness_score,
+            "relevance": round(relevance_score, 1),
+            "completeness": round(completeness_score, 1),
+            "confidence": round(confidence_score, 1),
         }
 
 

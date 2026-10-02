@@ -23,8 +23,9 @@ from app.schemas.question import (
     NextQuestionResponse,
     QuestionResponse,
 )
+from app.core.config import settings
 from app.schemas.report import FinalInterviewReport
-from app.schemas.session import InterviewSessionResponse, SubmitAnswerResponse
+from app.schemas.session import InterviewSessionResponse, RealtimeSessionResponse, SubmitAnswerResponse
 from app.services import interview_service, question_service
 from app.services.interview_orchestrator import interview_orchestrator
 from app.services.interview_report import interview_report_service
@@ -191,6 +192,99 @@ def get_interview_session(
         return interview_orchestrator.get_session_state(db=db, interview_id=interview_id)
     except KeyError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e).strip("'"))
+
+
+@router.post(
+    "/{interview_id}/realtime-session",
+    response_model=RealtimeSessionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Create OpenAI Realtime Ephemeral Session Token",
+    description="Generates an ephemeral client secret token from OpenAI Realtime API for WebRTC voice communication. Keeps OPENAI_API_KEY server-side.",
+)
+def create_realtime_session(
+    interview_id: uuid.UUID,
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    interview = _verify_interview_ownership(db, interview_id, current_candidate.id)
+
+    api_key = settings.OPENAI_API_KEY or os.environ.get("OPENAI_API_KEY", "")
+    if not api_key:
+        return RealtimeSessionResponse(
+            client_secret=None,
+            error="OPENAI_API_KEY is not configured on the server."
+        )
+
+    # Build rich persistent interview session context
+    session_state = interview_orchestrator.get_session_state(db, interview_id)
+    all_questions = interview_orchestrator._get_questions(db, interview_id)
+
+    asked_history = []
+    for q in all_questions:
+        if q.answer and q.answer.answer_text:
+            asked_history.append(f"Q#{q.sequence_number}: \"{q.question_text}\" | Candidate Answer: \"{q.answer.answer_text}\"")
+        elif q.answer:
+            asked_history.append(f"Q#{q.sequence_number}: \"{q.question_text}\" | Candidate Answer: [Recorded]")
+
+    history_str = "\n".join(asked_history) if asked_history else "None yet."
+    current_q_obj = session_state.get("current_question")
+    current_q_text = current_q_obj.question_text if current_q_obj else "Interview assessment concluding."
+
+    context_instructions = (
+        f"You are Intervio.Ai, an intelligent AI technical interviewer conducting a live session.\n"
+        f"Candidate Target Role: {interview.role}\n"
+        f"Difficulty Level: {interview.difficulty}\n"
+        f"Session Progress: Question {session_state['answered_questions'] + 1} of {session_state['total_questions']}\n\n"
+        f"CURRENT ACTIVE QUESTION:\n\"{current_q_text}\"\n\n"
+        f"PREVIOUSLY ASKED QUESTIONS & CANDIDATE ANSWERS:\n{history_str}\n\n"
+        f"CRITICAL RULES:\n"
+        f"1. Maintain full awareness of previously asked questions and candidate answers.\n"
+        f"2. NEVER repeat a question that has already been asked unless the candidate explicitly requests 'please repeat the question'.\n"
+        f"3. Respond naturally and concisely to candidate speech, then guide them through the active question."
+    )
+
+    try:
+        import httpx
+        url = "https://api.openai.com/v1/realtime/sessions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": "gpt-4o-realtime-preview-2024-12-17",
+            "voice": "alloy",
+            "instructions": context_instructions,
+            "input_audio_transcription": {
+                "model": "whisper-1"
+            },
+            "turn_detection": {
+                "type": "server_vad",
+                "threshold": 0.5,
+                "prefix_padding_ms": 300,
+                "silence_duration_ms": 500,
+                "create_response": True,
+            },
+        }
+        response = httpx.post(url, headers=headers, json=payload, timeout=10.0)
+        if response.status_code != 200:
+            return RealtimeSessionResponse(
+                client_secret=None,
+                error=f"OpenAI API status {response.status_code}: {response.text}"
+            )
+        data = response.json()
+        secret_obj = data.get("client_secret", {})
+        return RealtimeSessionResponse(
+            client_secret=secret_obj.get("value"),
+            expires_at=secret_obj.get("expires_at"),
+            session_id=data.get("id"),
+            model=data.get("model", "gpt-4o-realtime-preview-2024-12-17"),
+            voice=data.get("voice", "alloy"),
+        )
+    except Exception as exc:
+        return RealtimeSessionResponse(
+            client_secret=None,
+            error=f"Failed to issue ephemeral session token: {str(exc)}"
+        )
 
 
 @router.post(

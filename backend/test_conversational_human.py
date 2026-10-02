@@ -134,5 +134,21 @@ class TestHumanLikeConversation(unittest.TestCase):
         self.assertNotEqual(res["next_question"].id, self.question1.id)
 
 
+    def test_case_4_off_topic_answer_evaluation(self):
+        """Case 4: Off-topic answer MUST receive low score (<= 15.0) and performance_level 'off_topic'."""
+        user_speech = "I love eating pizza and watching movies on weekends."
+
+        from app.services.answer_analyzer import answer_analyzer
+        analysis = answer_analyzer.analyze(
+            question_text=self.question1.question_text,
+            answer_text=user_speech,
+            role=self.interview.role,
+        )
+
+        self.assertEqual(analysis["performance_level"], "off_topic")
+        self.assertLessEqual(analysis["overall_score"], 15.0)
+        self.assertIn("off-topic", analysis["feedback"].lower())
+
+
 if __name__ == "__main__":
     unittest.main()

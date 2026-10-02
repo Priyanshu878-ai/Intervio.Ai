@@ -296,6 +296,8 @@ class InterviewOrchestrator:
                 contextual_response = "Take your time. Let me know when you're ready to answer."
             elif intent == "confused":
                 contextual_response = f"No worries at all! Let's reframe: {question.question_text}. Focus on the main technical concepts."
+            elif intent == "dont_know":
+                contextual_response = "No problem at all! That concept can be tricky to recall. Let's step back and focus on foundational principles."
             else:
                 contextual_response = f"Sure, here is the question again: {question.question_text}"
 

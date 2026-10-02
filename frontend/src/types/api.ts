@@ -129,6 +129,15 @@ export interface SubmitAnswerResponse {
   session_status: string;
 }
 
+export interface RealtimeSessionResponse {
+  client_secret: string | null;
+  expires_at?: number | null;
+  model: string;
+  voice: string;
+  session_id?: string | null;
+  error?: string | null;
+}
+
 export interface CandidateReportSummary {
   id: string;
   name: string;

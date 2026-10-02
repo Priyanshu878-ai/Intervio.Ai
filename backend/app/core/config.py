@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
     DATABASE_URL: str = ""
+    OPENAI_API_KEY: str = ""
+
 
     CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:3000",
