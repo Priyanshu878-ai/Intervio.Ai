@@ -79,13 +79,11 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
     const audioToSubmit = audioFile;
     const videoToSubmit = videoFile;
 
-    // Show neutral transition immediately
     setTransitioning('next_question');
 
     try {
       const res = await onSubmitAnswer(textToSubmit, audioToSubmit, videoToSubmit);
       
-      // Clear inputs upon success
       setAnswerText('');
       setAudioFile(null);
       setVideoFile(null);
@@ -95,13 +93,11 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
         setTransitioning('completing');
         await onComplete();
       } else {
-        // Brief smooth pause before revealing the next question
         setTimeout(() => {
           setTransitioning('none');
         }, 600);
       }
     } catch {
-      // Revert transition if error occurs so candidate can retry
       setTransitioning('none');
     }
   };
@@ -116,16 +112,16 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
     return (
       <div className="space-y-4">
         <div className="max-w-5xl mx-auto px-4 pt-4 flex justify-end">
-          <div className="p-1 rounded-xl bg-dark-900 border border-slate-800 flex items-center gap-1 text-xs">
+          <div className="p-1 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center gap-1 text-xs">
             <button
               onClick={() => setViewMode('realtime')}
-              className="px-3 py-1 rounded-lg bg-brand-500 text-white font-semibold cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white font-bold cursor-pointer shadow-xs"
             >
               Real-Time AI Room
             </button>
             <button
               onClick={() => setViewMode('classic')}
-              className="px-3 py-1 rounded-lg text-slate-400 hover:text-slate-200 font-medium cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 font-bold cursor-pointer"
             >
               Classic View
             </button>
@@ -147,86 +143,86 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      {/* View Mode Pill Selector */}
+    <div className="max-w-4xl mx-auto px-4 py-8 animate-fadeIn">
+      {/* View Mode Selector */}
       <div className="flex items-center justify-end mb-4">
-        <div className="p-1 rounded-xl bg-dark-900 border border-slate-800 flex items-center gap-1 text-xs">
+        <div className="p-1 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center gap-1 text-xs">
           <button
             onClick={() => setViewMode('realtime')}
-            className="px-3 py-1 rounded-lg text-slate-400 hover:text-slate-200 font-medium cursor-pointer"
+            className="px-3.5 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 font-bold cursor-pointer"
           >
             Real-Time AI Room
           </button>
           <button
             onClick={() => setViewMode('classic')}
-            className="px-3 py-1 rounded-lg bg-brand-500 text-white font-semibold cursor-pointer"
+            className="px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white font-bold cursor-pointer shadow-xs"
           >
             Classic View
           </button>
         </div>
       </div>
 
-      {/* Top Session Progress Bar */}
+      {/* Session Progress Bar */}
       <div className="card-3d p-4 sm:p-5 mb-6">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-3 text-xs text-slate-300">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-3 text-xs text-slate-700 font-bold">
           <div className="flex items-center gap-2 font-mono">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-semibold text-white">Live Evaluation</span>
-            <span className="text-slate-500">|</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-extrabold text-slate-900">Live Evaluation</span>
+            <span className="text-slate-300">|</span>
             <span className="capitalize">{session.role}</span>
-            <span className="text-slate-500">|</span>
+            <span className="text-slate-300">|</span>
             <span className="capitalize">{session.difficulty}</span>
           </div>
           
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5 text-slate-400 font-mono">
-              <Clock className="w-3.5 h-3.5 text-brand-400" />
+            <div className="flex items-center gap-1.5 text-slate-600 font-mono">
+              <Clock className="w-3.5 h-3.5 text-indigo-600" />
               <span>{formatTime(elapsedSec)}</span>
             </div>
-            <div className="text-slate-400 font-medium flex items-center gap-1.5">
-              <span>Question <strong className="text-white">{currentSeq}</strong></span>
-              <span className="text-slate-600">•</span>
-              <span className="text-xs text-brand-300 font-mono">AI Adaptive</span>
+            <div className="text-slate-600 font-bold flex items-center gap-1.5">
+              <span>Question <strong className="text-slate-900">{currentSeq}</strong></span>
+              <span className="text-slate-300">•</span>
+              <span className="text-xs text-indigo-600 font-mono font-bold">AI Adaptive</span>
             </div>
           </div>
         </div>
 
-        {/* 3D-styled Progress Bar */}
-        <div className="relative w-full h-3 bg-dark-900 rounded-full overflow-hidden p-0.5 border border-slate-800 shadow-inner">
+        {/* 3D Progress Bar */}
+        <div className="relative w-full h-3 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/80 shadow-inner">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-brand-500 via-indigo-500 to-brand-cyan transition-all duration-500 shadow-md shadow-brand-500/20"
+            className="h-full rounded-full bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 transition-all duration-500 shadow-xs"
             style={{ width: `${Math.max(progressPercent, 4)}%` }}
           />
         </div>
       </div>
 
       {error && !(transitioning === 'completing' || session.is_completed) && (
-        <div role="alert" aria-live="assertive" className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center gap-3">
-          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+        <div role="alert" aria-live="assertive" className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center gap-3 font-semibold">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {/* 1. Interview Completed Screen */}
       {(transitioning === 'completing' || session.is_completed) ? (
-        <div className="card-3d p-10 sm:p-12 text-center animate-fadeIn border-brand-500/30">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto mb-4 shadow-lg shadow-emerald-500/10">
+        <div className="card-3d p-10 sm:p-12 text-center animate-fadeIn border-indigo-200">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 mx-auto mb-4 shadow-sm">
             <CheckCircle2 className="w-8 h-8" />
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">Interview completed</h3>
-          <p className="text-sm text-slate-300 mb-6 max-w-md mx-auto leading-relaxed">
+          <h3 className="text-xl font-extrabold text-slate-900 mb-2">Interview completed</h3>
+          <p className="text-sm text-slate-600 mb-6 max-w-md mx-auto leading-relaxed font-medium">
             All interview questions have been submitted.
           </p>
           {error ? (
             <div className="space-y-4">
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs max-w-md mx-auto">
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs max-w-md mx-auto font-semibold">
                 {error}
               </div>
               <button
                 type="button"
                 onClick={onComplete}
                 disabled={isLoading}
-                className="btn-3d px-6 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-white font-bold text-xs inline-flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                className="btn-3d px-6 py-2.5 text-white font-extrabold text-xs inline-flex items-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {isLoading ? (
                   <>
@@ -239,48 +235,48 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
               </button>
             </div>
           ) : (
-            <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-dark-900 border border-slate-800 text-xs text-brand-300 font-semibold shadow-inner">
-              <span className="w-4 h-4 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
+            <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-2xl bg-indigo-50 border border-indigo-200 text-xs text-indigo-700 font-bold shadow-xs">
+              <span className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
               <span>Analyzing your responses...</span>
             </div>
           )}
         </div>
       ) : (
         <>
-          {/* 2. Transition State: Answer Recorded — Preparing Next Question */}
+          {/* 2. Transition State */}
           {transitioning === 'next_question' && (
             <div className="card-3d p-10 sm:p-12 text-center animate-fadeIn">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 mx-auto mb-4">
                 <CheckCircle2 className="w-7 h-7" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Answer recorded</h3>
-              <div className="inline-flex items-center gap-2 text-xs text-slate-400">
-                <span className="w-3.5 h-3.5 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
+              <h3 className="text-lg font-extrabold text-slate-900 mb-2">Answer recorded</h3>
+              <div className="inline-flex items-center gap-2 text-xs text-slate-600 font-semibold">
+                <span className="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
                 <span>Preparing next question...</span>
               </div>
             </div>
           )}
 
-          {/* 3. Active Question Display & Answer Box (Kept in DOM so camera stream stays live) */}
+          {/* 3. Active Question Display */}
           {currentQuestion ? (
             <div className={transitioning === 'next_question' ? 'hidden' : 'space-y-6'}>
               {/* Question Card */}
               <div aria-live="polite" className="card-3d card-3d-hover p-6 sm:p-8">
                 <div className="flex items-center justify-between gap-4 mb-4">
-                  <span className="px-3 py-1 rounded-lg bg-brand-500/15 border border-brand-500/30 text-brand-300 text-xs font-bold font-mono">
+                  <span className="px-3 py-1 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-extrabold font-mono">
                     QUESTION #{currentQuestion.sequence_number}
                   </span>
-                  <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">
+                  <span className="text-xs text-slate-500 uppercase tracking-wider font-extrabold">
                     {currentQuestion.question_type}
                   </span>
                 </div>
 
-                <h2 className="text-lg sm:text-xl font-semibold text-white leading-relaxed tracking-tight">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 leading-relaxed tracking-tight">
                   {currentQuestion.question_text}
                 </h2>
               </div>
 
-              {/* Real-time Camera & Microphone Capture */}
+              {/* Camera & Microphone Capture */}
               <CameraCapture
                 questionId={currentQuestion.id}
                 onRecordingComplete={(audio, video, duration) => {
@@ -296,21 +292,21 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
                 isSubmitting={isLoading || transitioning !== 'none'}
               />
 
-              {/* Written Answer / Accompanying Notes */}
+              {/* Written Answer */}
               <form onSubmit={handleSubmit} className="card-3d p-6">
-                <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-800">
-                  <label htmlFor="written-answer" className="flex items-center gap-2 text-xs font-semibold text-white">
-                    <FileText className="w-4 h-4 text-brand-400" />
+                <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-200/80">
+                  <label htmlFor="written-answer" className="flex items-center gap-2 text-xs font-extrabold text-slate-900">
+                    <FileText className="w-4 h-4 text-indigo-600" />
                     <span>Written Answer / Accompanying Notes</span>
                     {(audioFile || videoFile) && (
-                      <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
+                      <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1 font-mono font-bold">
                         <Check className="w-3 h-3" />
                         Recording attached
                       </span>
                     )}
                   </label>
 
-                  <div className="text-[11px] text-slate-400 font-mono">
+                  <div className="text-[11px] text-slate-500 font-mono font-semibold">
                     {wordCount} words | {answerText.length} chars
                   </div>
                 </div>
@@ -327,16 +323,16 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
                         ? "Optional: Answer recorded via camera. You can also add written notes or submit directly..."
                         : "Explain your technical reasoning, architecture choices, implementation details, or record your answer using the camera above..."
                     }
-                    className="w-full bg-dark-900 border border-slate-800 focus:border-brand-500 rounded-xl p-4 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition-colors leading-relaxed resize-y font-sans"
+                    className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl p-4 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors leading-relaxed resize-y font-sans font-medium shadow-sm"
                   />
                 </div>
 
                 {/* Submit Action */}
-                <div className="mt-5 pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
-                  <div className="text-xs text-slate-400">
+                <div className="mt-5 pt-4 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-xs text-slate-600 font-semibold">
                     {audioFile || videoFile ? (
-                      <span className="text-emerald-400 flex items-center gap-1.5 font-medium">
-                        <Check className="w-3.5 h-3.5" />
+                      <span className="text-emerald-700 flex items-center gap-1.5 font-bold">
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
                         Multimodal response ready ({Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, '0')})
                       </span>
                     ) : (
@@ -350,7 +346,7 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
                     type="submit"
                     disabled={isLoading || transitioning !== 'none' || (!answerText.trim() && !audioFile && !videoFile)}
                     aria-busy={isLoading || transitioning !== 'none'}
-                    className="btn-3d px-6 py-2.5 rounded-xl bg-gradient-to-r from-brand-500 to-indigo-600 text-white font-bold text-xs sm:text-sm flex items-center gap-2 hover:from-brand-400 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    className="btn-3d px-6 py-2.5 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-md shadow-indigo-500/20"
                   >
                     {isLoading || transitioning !== 'none' ? (
                       <>
@@ -368,16 +364,15 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
               </form>
             </div>
           ) : (
-            /* 4. Empty Fallback */
             <div className="card-3d p-8 text-center">
-              <HelpCircle className="w-10 h-10 text-slate-500 mx-auto mb-3" />
-              <h3 className="text-base font-bold text-white">No Active Question Available</h3>
-              <p className="text-xs text-slate-400 mt-1">
+              <HelpCircle className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+              <h3 className="text-base font-extrabold text-slate-900">No Active Question Available</h3>
+              <p className="text-xs text-slate-500 mt-1 font-semibold">
                 All scheduled questions may have been completed.
               </p>
               <button
                 onClick={onComplete}
-                className="btn-3d mt-4 px-5 py-2 rounded-lg bg-brand-500 text-white text-xs font-bold cursor-pointer"
+                className="btn-3d mt-4 px-5 py-2 text-white text-xs font-bold cursor-pointer"
               >
                 Check Final Report
               </button>

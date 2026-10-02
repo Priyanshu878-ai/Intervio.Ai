@@ -270,6 +270,70 @@ class InterviewOrchestrator:
             interview.started_at = datetime.now(timezone.utc)
             db.commit()
 
+        from app.services.conversational_ai import (
+            detect_conversational_intent,
+            generate_conversational_reaction,
+            format_conversational_question,
+        )
+
+        effective_text = (answer_text or "").strip()
+
+        # If text is empty but audio is provided, extract transcript first for intent detection
+        audio_analysis_pre = None
+        if not effective_text and audio_file_path:
+            from app.services.audio_analyzer import audio_analyzer
+            audio_analysis_pre = audio_analyzer.analyze_audio(audio_file_path)
+            if audio_analysis_pre and audio_analysis_pre.get("transcript"):
+                effective_text = audio_analysis_pre["transcript"].strip()
+
+        intent = detect_conversational_intent(effective_text)
+        if intent:
+            if intent == "repeat":
+                contextual_response = "Sure, let me repeat the question for you."
+            elif intent == "clarify":
+                contextual_response = f"To clarify, the question is: {question.question_text}. I'm looking for your practical experience or approach to this topic."
+            elif intent == "wait":
+                contextual_response = "Take your time. Let me know when you're ready to answer."
+            elif intent == "confused":
+                contextual_response = f"No worries at all! Let's reframe: {question.question_text}. Focus on the main technical concepts."
+            else:
+                contextual_response = f"Sure, here is the question again: {question.question_text}"
+
+            intent_analysis = {
+                "text_score": None,
+                "audio_score": None,
+                "vision_score": None,
+                "final_score": 50.0,
+                "performance_level": "average",
+                "modality_weights_used": {"intent_handling": 1.0},
+                "feedback": f"Conversational intent '{intent}' detected. Question repeated without penalty.",
+                "strengths": [],
+                "improvement_areas": [],
+                "text_analysis": None,
+                "audio_analysis": None,
+                "vision_analysis": None,
+            }
+
+            return {
+                "interview_id": interview.id,
+                "question_id": question_id,
+                "analysis": intent_analysis,
+                "next_question": question,  # MUST repeat current question, never generate a new question!
+                "adaptive_strategy": {
+                    "action": f"handle_intent_{intent}",
+                    "target_difficulty": interview.difficulty or "medium",
+                    "reason": f"Candidate intent: {intent}",
+                },
+                "contextual_response": contextual_response,
+                "is_completed": False,
+                "session_status": interview.status,
+                "evidence_status": {
+                    "reason": f"Conversational intent handled ({intent}).",
+                    "decision": "continue_intent_handled",
+                    "evidence_score": 0.5,
+                },
+            }
+
         # Run multimodal analysis
         analysis_res = analyze_multimodal_answer(
             db=db,

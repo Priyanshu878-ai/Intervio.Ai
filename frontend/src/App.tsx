@@ -256,12 +256,12 @@ export const App: React.FC = () => {
   // Initial Loading Screen
   if (isAuthLoading) {
     return (
-      <div className="min-h-screen bg-dark-950 flex flex-col items-center justify-center text-slate-200">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-500 to-brand-cyan flex items-center justify-center shadow-xl shadow-brand-500/25 mb-4 animate-pulse">
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-800">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-500 flex items-center justify-center shadow-xl shadow-indigo-500/25 mb-4 animate-pulse">
           <Sparkles className="w-6 h-6 text-white" />
         </div>
-        <div className="text-sm font-semibold text-slate-300">Initializing Intervio.Ai...</div>
-        <div className="text-xs text-slate-500 mt-1">Connecting to authenticated assessment engine</div>
+        <div className="text-sm font-extrabold text-slate-900">Initializing Intervio.Ai...</div>
+        <div className="text-xs text-slate-500 mt-1 font-semibold">Connecting to authenticated assessment engine</div>
       </div>
     );
   }
@@ -270,8 +270,8 @@ export const App: React.FC = () => {
   if (!currentUser) {
     return (
       <React.Suspense fallback={
-        <div className="min-h-screen flex items-center justify-center bg-dark-950 text-slate-400 text-xs font-mono">
-          <span className="w-5 h-5 border-2 border-brand-400 border-t-transparent rounded-full animate-spin mr-2.5" />
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 text-xs font-mono font-bold">
+          <span className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mr-2.5" />
           <span>Loading authentication...</span>
         </div>
       }>
@@ -283,8 +283,8 @@ export const App: React.FC = () => {
   const isInterviewActive = currentScreen === 'interview';
 
   return (
-    <div className="min-h-screen flex bg-dark-950 text-slate-100 relative overflow-x-hidden">
-      {/* Futuristic 3D Animated Background */}
+    <div className="min-h-screen flex bg-slate-50 text-slate-900 relative overflow-x-hidden">
+      {/* Light Futuristic 3D Animated Background */}
       <FuturisticBackground />
 
       {/* Persistent Sidebar for Desktop (Hidden during active interview) */}
@@ -328,11 +328,11 @@ export const App: React.FC = () => {
 
         {error && currentScreen !== 'setup' && (
           <div className="max-w-6xl mx-auto px-4 mt-4 w-full">
-            <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center justify-between">
+            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-semibold flex items-center justify-between shadow-xs">
               <span>{error}</span>
               <button 
                 onClick={() => setError(null)}
-                className="text-xs font-bold text-rose-400 hover:text-rose-200 cursor-pointer ml-4"
+                className="text-xs font-bold text-rose-700 hover:text-rose-900 cursor-pointer ml-4"
               >
                 Dismiss
               </button>
@@ -340,11 +340,11 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* Async Data Fetching Banner (e.g., retrieving reports from Dashboard / History) */}
+        {/* Async Data Fetching Banner */}
         {isLoading && currentScreen !== 'setup' && currentScreen !== 'interview' && (
           <div className="max-w-6xl mx-auto px-4 mt-4 w-full">
-            <div className="p-3.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs flex items-center gap-3">
-              <span className="w-4 h-4 border-2 border-brand-400 border-t-transparent rounded-full animate-spin shrink-0" />
+            <div className="p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold flex items-center gap-3 shadow-xs">
+              <span className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin shrink-0" />
               <span>Loading assessment data...</span>
             </div>
           </div>
@@ -352,8 +352,8 @@ export const App: React.FC = () => {
 
         <main className="flex-1">
           <React.Suspense fallback={
-            <div className="flex items-center justify-center min-h-[360px] text-slate-400 text-xs font-mono">
-              <span className="w-5 h-5 border-2 border-brand-400 border-t-transparent rounded-full animate-spin mr-2.5" />
+            <div className="flex items-center justify-center min-h-[360px] text-slate-500 text-xs font-mono font-semibold">
+              <span className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mr-2.5" />
               <span>Loading view...</span>
             </div>
           }>
@@ -416,7 +416,7 @@ export const App: React.FC = () => {
 
         {/* Mobile Bottom Navigation Bar (Hidden during active interview) */}
         {!isInterviewActive && (
-          <nav aria-label="Mobile Navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-dark-900/95 backdrop-blur-xl border-t border-slate-800 flex items-center justify-around py-2 px-1">
+          <nav aria-label="Mobile Navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200 flex items-center justify-around py-2 px-1 shadow-[0_-4px_16px_rgba(0,0,0,0.04)]">
             <button
               aria-label="Dashboard"
               aria-current={currentScreen === 'dashboard' ? 'page' : undefined}
@@ -425,7 +425,7 @@ export const App: React.FC = () => {
                 setCurrentScreen('dashboard');
               }}
               className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] cursor-pointer ${
-                currentScreen === 'dashboard' ? 'text-brand-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+                currentScreen === 'dashboard' ? 'text-indigo-600 font-extrabold' : 'text-slate-500 hover:text-slate-800 font-semibold'
               }`}
             >
               <LayoutDashboard className="w-4 h-4" />
@@ -440,7 +440,7 @@ export const App: React.FC = () => {
                 setCurrentScreen('setup');
               }}
               className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] cursor-pointer ${
-                currentScreen === 'setup' ? 'text-brand-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+                currentScreen === 'setup' ? 'text-indigo-600 font-extrabold' : 'text-slate-500 hover:text-slate-800 font-semibold'
               }`}
             >
               <PlayCircle className="w-4 h-4" />
@@ -455,7 +455,7 @@ export const App: React.FC = () => {
                 setCurrentScreen('history');
               }}
               className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] cursor-pointer ${
-                currentScreen === 'history' ? 'text-brand-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+                currentScreen === 'history' ? 'text-indigo-600 font-extrabold' : 'text-slate-500 hover:text-slate-800 font-semibold'
               }`}
             >
               <History className="w-4 h-4" />
@@ -470,7 +470,7 @@ export const App: React.FC = () => {
                 setCurrentScreen('profile');
               }}
               className={`flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] cursor-pointer ${
-                currentScreen === 'profile' ? 'text-brand-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+                currentScreen === 'profile' ? 'text-indigo-600 font-extrabold' : 'text-slate-500 hover:text-slate-800 font-semibold'
               }`}
             >
               <User className="w-4 h-4" />
@@ -479,7 +479,7 @@ export const App: React.FC = () => {
           </nav>
         )}
 
-        <footer className="py-4 border-t border-slate-800/80 text-center text-xs text-slate-500">
+        <footer className="py-4 border-t border-slate-200/80 text-center text-xs text-slate-500 font-medium">
           <p>Intervio.Ai — Multimodal Transformer & Computer Vision Assessment Architecture</p>
         </footer>
       </div>

@@ -79,36 +79,33 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
-      {/* 3D-inspired Hero Banner */}
+    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12 animate-fadeIn">
+      {/* 3D Hero Banner */}
       <div className="perspective-container mb-8">
-        <div className="card-3d perspective-tilt p-6 sm:p-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-brand-cyan/10 rounded-full blur-3xl pointer-events-none" />
-
+        <div className="card-3d perspective-tilt p-6 sm:p-8 relative overflow-hidden bg-gradient-to-r from-white via-indigo-50/40 to-cyan-50/30 border border-slate-200/90 shadow-[0_20px_40px_-15px_rgba(99,102,241,0.08)]">
           <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/15 border border-brand-500/30 text-brand-300 text-xs font-medium mb-3">
-                <Sparkles className="w-3.5 h-3.5" />
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200/80 text-indigo-700 text-xs font-bold mb-3 shadow-xs">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
                 <span>Next-Gen Evaluation Engine</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 AI-Orchestrated Technical Interview
               </h1>
-              <p className="text-sm text-slate-300 mt-2 max-w-xl leading-relaxed">
+              <p className="text-sm text-slate-600 mt-2 max-w-xl font-medium leading-relaxed">
                 Experience an adaptive assessment calibrated with Sentence Transformer semantic evaluation, 
                 audio pacing analysis, and visual engagement tracking.
               </p>
             </div>
 
             {/* 3D Depth Spec Pill */}
-            <div className="hidden md:flex flex-col gap-2 p-4 rounded-xl bg-dark-900/80 border border-slate-800 shadow-inner">
-              <div className="flex items-center gap-2 text-xs text-slate-300 font-mono">
-                <Cpu className="w-4 h-4 text-brand-cyan" />
+            <div className="hidden md:flex flex-col gap-2 p-4 rounded-2xl bg-white/90 border border-slate-200/90 shadow-sm">
+              <div className="flex items-center gap-2 text-xs text-slate-700 font-bold font-mono">
+                <Cpu className="w-4 h-4 text-cyan-600" />
                 <span>MiniLM-L6 Semantic</span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-300 font-mono">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <div className="flex items-center gap-2 text-xs text-slate-700 font-bold font-mono">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
                 <span>Adaptive Difficulty</span>
               </div>
             </div>
@@ -117,8 +114,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
       </div>
 
       {error && (
-        <div role="alert" aria-live="assertive" className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center gap-3">
-          <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+        <div role="alert" aria-live="assertive" className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center gap-3 font-semibold">
+          <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping shrink-0" />
           <span>{error}</span>
         </div>
       )}
@@ -128,11 +125,11 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
         {/* Role Selection */}
         <div className="card-3d p-6 relative z-30">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-white flex items-center gap-2">
-              <Briefcase className="w-4 h-4 text-brand-cyan" />
+            <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+              <Briefcase className="w-4 h-4 text-indigo-600" />
               <span>Target Role & Track</span>
             </h2>
-            <span className="text-xs text-slate-400 font-mono hidden sm:inline">
+            <span className="text-xs text-slate-500 font-mono font-semibold hidden sm:inline">
               Select or search below
             </span>
           </div>
@@ -148,8 +145,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
           {/* Difficulty */}
           <div className="card-3d p-6">
-            <h2 className="text-base font-semibold text-white flex items-center gap-2 mb-4">
-              <Sliders className="w-4 h-4 text-brand-emerald" />
+            <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2 mb-4">
+              <Sliders className="w-4 h-4 text-emerald-600" />
               <span>Starting Difficulty</span>
             </h2>
             <div role="radiogroup" aria-label="Starting Difficulty" className="space-y-2.5">
@@ -166,10 +163,10 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
                       }
                     }}
                     onClick={() => setDifficulty(d.id)}
-                    className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                    className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all ${
                       selected
-                        ? 'bg-brand-500/15 border-brand-500 text-white shadow-md'
-                        : 'bg-dark-850 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                        ? 'bg-indigo-50/80 border-indigo-600 text-slate-900 shadow-sm'
+                        : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300'
                     }`}
                   >
                     <input
@@ -178,11 +175,11 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
                       aria-label={d.label}
                       checked={selected}
                       onChange={() => setDifficulty(d.id)}
-                      className="mt-0.5 text-brand-500 focus:ring-0"
+                      className="mt-0.5 text-indigo-600 focus:ring-indigo-500"
                     />
                     <div>
-                      <div className="text-xs font-bold">{d.label}</div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">{d.desc}</div>
+                      <div className="text-xs font-extrabold text-slate-900">{d.label}</div>
+                      <div className="text-[11px] text-slate-500 font-medium mt-0.5">{d.desc}</div>
                     </div>
                   </label>
                 );
@@ -193,8 +190,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
           {/* Interview Type & Questions Count */}
           <div className="card-3d p-6 flex flex-col justify-between">
             <div>
-              <h2 className="text-base font-semibold text-white flex items-center gap-2 mb-4">
-                <Layers className="w-4 h-4 text-brand-amber" />
+              <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2 mb-4">
+                <Layers className="w-4 h-4 text-cyan-600" />
                 <span>Interview Format</span>
               </h2>
               <div role="radiogroup" aria-label="Interview Format" className="space-y-2.5 mb-5">
@@ -211,10 +208,10 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
                         }
                       }}
                       onClick={() => setInterviewType(t.id)}
-                      className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                      className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all ${
                         selected
-                          ? 'bg-brand-500/15 border-brand-500 text-white shadow-md'
-                          : 'bg-dark-850 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                          ? 'bg-indigo-50/80 border-indigo-600 text-slate-900 shadow-sm'
+                          : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300'
                       }`}
                     >
                       <input
@@ -223,11 +220,11 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
                         aria-label={t.label}
                         checked={selected}
                         onChange={() => setInterviewType(t.id)}
-                        className="mt-0.5 text-brand-500 focus:ring-0"
+                        className="mt-0.5 text-indigo-600 focus:ring-indigo-500"
                       />
                       <div>
-                        <div className="text-xs font-bold">{t.label}</div>
-                        <div className="text-[11px] text-slate-400 mt-0.5">{t.desc}</div>
+                        <div className="text-xs font-extrabold text-slate-900">{t.label}</div>
+                        <div className="text-[11px] text-slate-500 font-medium mt-0.5">{t.desc}</div>
                       </div>
                     </label>
                   );
@@ -236,17 +233,17 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
             </div>
 
             {/* AI-Controlled Assessment Length Indicator */}
-            <div className="pt-4 border-t border-slate-800">
-              <div className="flex items-center justify-between text-xs text-slate-300 font-medium mb-1.5">
+            <div className="pt-4 border-t border-slate-200/80">
+              <div className="flex items-center justify-between text-xs text-slate-700 font-bold mb-1.5">
                 <span className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-brand-cyan" />
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
                   <span>Assessment Length:</span>
                 </span>
-                <span className="font-bold text-brand-300 bg-brand-500/10 px-2.5 py-0.5 rounded border border-brand-500/20 font-mono text-[11px]">
+                <span className="font-extrabold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200/70 font-mono text-[11px]">
                   {difficulty === 'easy' ? '5–8 Questions' : difficulty === 'hard' ? '7–12 Questions' : '6–10 Questions'}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
+              <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
                 Adaptive AI dynamically evaluates your answers and concludes once sufficient assessment evidence is established.
               </p>
             </div>
@@ -259,7 +256,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart, isLoading, er
             type="submit"
             disabled={isLoading}
             aria-busy={isLoading}
-            className="btn-3d w-full py-4 rounded-xl bg-gradient-to-r from-brand-500 to-indigo-600 text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 hover:from-brand-400 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="btn-3d w-full py-4 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-lg shadow-indigo-500/25"
           >
             {isLoading ? (
               <>

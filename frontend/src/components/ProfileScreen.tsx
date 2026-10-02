@@ -143,30 +143,30 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6 animate-fadeIn">
       {/* Top Header & Sub-navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs font-semibold mb-2">
-            <Sparkles className="w-3.5 h-3.5" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200/70 text-indigo-700 text-xs font-bold mb-2 shadow-xs">
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
             <span>Candidate Intelligence & Progress</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">{candidate.name}</h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{candidate.name}</h1>
+          <p className="text-xs text-slate-500 mt-0.5 font-medium">
             Deterministic competency analytics, trajectory trends, and actionable skill recommendations.
           </p>
         </div>
 
         {/* Tab Switcher */}
-        <div role="tablist" aria-label="Candidate Profile Sections" className="flex items-center gap-1.5 p-1 bg-dark-900 border border-slate-800 rounded-xl">
+        <div role="tablist" aria-label="Candidate Profile Sections" className="flex items-center gap-1.5 p-1 bg-slate-100 border border-slate-200 rounded-2xl">
           <button
             id="tab-intelligence"
             role="tab"
             aria-selected={activeTab === 'intelligence'}
             aria-controls="tabpanel-intelligence"
             onClick={() => setActiveTab('intelligence')}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'intelligence'
-                ? 'bg-brand-500 text-white shadow-md shadow-brand-500/20'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5" />
@@ -179,10 +179,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             aria-selected={activeTab === 'settings'}
             aria-controls="tabpanel-settings"
             onClick={() => setActiveTab('settings')}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'settings'
-                ? 'bg-brand-500 text-white shadow-md shadow-brand-500/20'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <User className="w-3.5 h-3.5" />
@@ -195,37 +195,37 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       {activeTab === 'intelligence' && (
         <div id="tabpanel-intelligence" role="tabpanel" aria-labelledby="tab-intelligence" className="space-y-6 animate-fadeIn">
           {isIntelligenceLoading ? (
-            <div className="card-3d p-12 text-center text-slate-400 space-y-3">
-              <span className="w-8 h-8 border-2 border-brand-400 border-t-transparent rounded-full animate-spin inline-block" />
-              <div className="text-xs font-semibold">Synthesizing candidate intelligence...</div>
+            <div className="card-3d p-12 text-center text-slate-500 space-y-3 font-semibold">
+              <span className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin inline-block" />
+              <div className="text-xs font-bold">Synthesizing candidate intelligence...</div>
             </div>
           ) : intelligenceError ? (
             <div className="card-3d p-10 sm:p-14 text-center space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mx-auto shadow-inner">
+              <div className="w-16 h-16 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mx-auto shadow-xs">
                 <AlertCircle className="w-8 h-8" />
               </div>
-              <h3 className="text-lg font-bold text-white">Failed to Load Candidate Intelligence</h3>
-              <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
+              <h3 className="text-lg font-extrabold text-slate-900">Failed to Load Candidate Intelligence</h3>
+              <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed font-medium">
                 {intelligenceError}
               </p>
               <div className="pt-2">
                 <button
                   type="button"
                   onClick={fetchIntelligence}
-                  className="btn-3d px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs inline-flex items-center gap-2 cursor-pointer border border-slate-700 transition-colors"
+                  className="btn-3d-secondary px-6 py-2.5 text-slate-900 font-extrabold text-xs inline-flex items-center gap-2 cursor-pointer shadow-xs"
                 >
                   <span>Retry Loading</span>
                 </button>
               </div>
             </div>
           ) : !intelligence || !intelligence.has_data ? (
-            /* Clear, Constructive Empty State */
+            /* Empty State */
             <div className="card-3d p-10 sm:p-14 text-center space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-dark-900 border border-slate-800 flex items-center justify-center text-slate-500 mx-auto shadow-inner">
-                <HelpCircle className="w-8 h-8 opacity-60" />
+              <div className="w-16 h-16 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto shadow-xs">
+                <HelpCircle className="w-8 h-8 opacity-60 text-slate-400" />
               </div>
-              <h3 className="text-lg font-bold text-white">No Completed Evaluations Recorded Yet</h3>
-              <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
+              <h3 className="text-lg font-extrabold text-slate-900">No Completed Evaluations Recorded Yet</h3>
+              <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed font-medium">
                 Complete your first adaptive interview session to establish an initial performance baseline. 
                 Once evaluated, your multi-session performance trend, communication analytics, technical strengths, 
                 and targeted practice areas will appear here automatically.
@@ -234,7 +234,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 <div className="pt-2">
                   <button
                     onClick={onStartInterview}
-                    className="btn-3d px-6 py-2.5 rounded-xl bg-gradient-to-r from-brand-500 to-indigo-600 hover:from-brand-400 hover:to-indigo-500 text-white font-bold text-xs inline-flex items-center gap-2 cursor-pointer shadow-lg shadow-brand-500/25"
+                    className="btn-3d px-6 py-2.5 text-white font-extrabold text-xs inline-flex items-center gap-2 cursor-pointer shadow-md shadow-indigo-500/20"
                   >
                     <Play className="w-3.5 h-3.5 fill-current" />
                     <span>Start First Interview Session</span>
@@ -245,11 +245,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           ) : (
             /* Intelligence Analytics Grid */
             <>
-              {/* 1. Overall Progress & Comparative Summary Banner */}
-              <div className="card-3d p-6 relative overflow-hidden bg-gradient-to-r from-dark-900 via-dark-850 to-dark-900 border border-slate-800">
+              {/* 1. Overall Progress Summary Banner */}
+              <div className="card-3d p-6 relative overflow-hidden bg-gradient-to-r from-white via-indigo-50/40 to-cyan-50/30 border border-slate-200/90 shadow-sm">
                 <div className="relative z-10 space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-400">
+                    <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-indigo-600">
                       <TrendingUp className="w-4 h-4" />
                       <span>Executive Trajectory Summary</span>
                     </div>
@@ -258,10 +258,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                     {intelligence.score_delta !== null ? (
                       <div className={`px-3 py-1 rounded-full text-xs font-bold font-mono flex items-center gap-1.5 border ${
                         intelligence.score_delta > 0
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                           : intelligence.score_delta < 0
-                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                          : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30'
+                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : 'bg-indigo-50 text-indigo-700 border-indigo-200'
                       }`}>
                         {intelligence.score_delta > 0 ? (
                           <ArrowUpRight className="w-3.5 h-3.5" />
@@ -277,39 +277,39 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         </span>
                       </div>
                     ) : (
-                      <span className="px-3 py-1 rounded-full text-[11px] font-mono text-slate-400 bg-dark-900 border border-slate-800">
+                      <span className="px-3 py-1 rounded-full text-[11px] font-mono text-slate-500 bg-slate-100 border border-slate-200 font-bold">
                         Baseline Session Established
                       </span>
                     )}
                   </div>
 
-                  <p className="text-sm text-slate-200 leading-relaxed max-w-3xl">
+                  <p className="text-sm text-slate-700 leading-relaxed max-w-3xl font-medium">
                     {intelligence.overall_progress_summary}
                   </p>
 
                   {/* Core KPI metrics row */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-800/80 text-xs">
-                    <div className="bg-dark-900/70 p-3 rounded-xl border border-slate-800/80">
-                      <span className="text-[11px] text-slate-400 block">Overall Average</span>
-                      <span className="text-xl font-bold font-mono text-white mt-0.5 block">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-200/80 text-xs">
+                    <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs">
+                      <span className="text-[11px] text-slate-500 uppercase font-extrabold block">Overall Average</span>
+                      <span className="text-xl font-black font-mono text-slate-900 mt-0.5 block">
                         {intelligence.overall_average_score !== null ? `${intelligence.overall_average_score}%` : '—'}
                       </span>
                     </div>
-                    <div className="bg-dark-900/70 p-3 rounded-xl border border-slate-800/80">
-                      <span className="text-[11px] text-slate-400 block">Latest Score</span>
-                      <span className="text-xl font-bold font-mono text-brand-300 mt-0.5 block">
+                    <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs">
+                      <span className="text-[11px] text-slate-500 uppercase font-extrabold block">Latest Score</span>
+                      <span className="text-xl font-black font-mono text-indigo-600 mt-0.5 block">
                         {intelligence.recent_score !== null ? `${intelligence.recent_score}%` : '—'}
                       </span>
                     </div>
-                    <div className="bg-dark-900/70 p-3 rounded-xl border border-slate-800/80">
-                      <span className="text-[11px] text-slate-400 block">Technical Average</span>
-                      <span className="text-xl font-bold font-mono text-emerald-400 mt-0.5 block">
+                    <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs">
+                      <span className="text-[11px] text-slate-500 uppercase font-extrabold block">Technical Average</span>
+                      <span className="text-xl font-black font-mono text-emerald-600 mt-0.5 block">
                         {intelligence.technical_average !== null ? `${intelligence.technical_average}%` : '—'}
                       </span>
                     </div>
-                    <div className="bg-dark-900/70 p-3 rounded-xl border border-slate-800/80">
-                      <span className="text-[11px] text-slate-400 block">Delivery / Comm</span>
-                      <span className="text-xl font-bold font-mono text-cyan-400 mt-0.5 block">
+                    <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs">
+                      <span className="text-[11px] text-slate-500 uppercase font-extrabold block">Delivery / Comm</span>
+                      <span className="text-xl font-black font-mono text-cyan-600 mt-0.5 block">
                         {intelligence.communication_average !== null ? `${intelligence.communication_average}%` : '—'}
                       </span>
                     </div>
@@ -317,16 +317,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 </div>
               </div>
 
-              {/* 2. Visual Trends: Performance & Communication Progression */}
+              {/* 2. Visual Trends */}
               <div className="card-3d p-6">
                 <div className="flex items-center justify-between gap-4 mb-4">
                   <div className="flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-brand-400" />
-                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                    <TrendingUp className="w-4 h-4 text-indigo-600" />
+                    <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">
                       Performance & Communication Trajectory
                     </h3>
                   </div>
-                  <span className="text-xs text-slate-500 font-mono">
+                  <span className="text-xs text-slate-500 font-mono font-semibold">
                     Session-by-Session Evolution
                   </span>
                 </div>
@@ -337,21 +337,21 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 />
               </div>
 
-              {/* 3. Strengths & Weak Areas (Growth Focus) */}
+              {/* 3. Strengths & Weak Areas */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Technical Strengths */}
-                <div className="card-3d p-6 border-emerald-500/20">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400 mb-4">
-                    <Award className="w-4 h-4" />
+                <div className="card-3d p-6 border-emerald-200">
+                  <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-emerald-700 mb-4">
+                    <Award className="w-4 h-4 text-emerald-600" />
                     <span>Technical Strengths & Competencies</span>
                   </div>
                   {intelligence.technical_strengths.length === 0 ? (
-                    <p className="text-xs text-slate-400">Complete more evaluations to identify persistent strengths.</p>
+                    <p className="text-xs text-slate-500 font-medium">Complete more evaluations to identify persistent strengths.</p>
                   ) : (
                     <ul className="space-y-3">
                       {intelligence.technical_strengths.map((str, idx) => (
-                        <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-200">
-                          <span className="text-emerald-400 font-bold mt-0.5">✓</span>
+                        <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-700 font-medium">
+                          <span className="text-emerald-600 font-bold mt-0.5">✓</span>
                           <span className="leading-relaxed">{str}</span>
                         </li>
                       ))}
@@ -360,18 +360,18 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 </div>
 
                 {/* Weak Areas / Growth Focus */}
-                <div className="card-3d p-6 border-amber-500/20">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400 mb-4">
-                    <Target className="w-4 h-4" />
+                <div className="card-3d p-6 border-amber-200">
+                  <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-amber-700 mb-4">
+                    <Target className="w-4 h-4 text-amber-600" />
                     <span>Targeted Growth & Weak Areas</span>
                   </div>
                   {intelligence.weak_areas.length === 0 ? (
-                    <p className="text-xs text-slate-400">No persistent deficiencies detected.</p>
+                    <p className="text-xs text-slate-500 font-medium">No persistent deficiencies detected.</p>
                   ) : (
                     <ul className="space-y-3">
                       {intelligence.weak_areas.map((area, idx) => (
-                        <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-200">
-                          <span className="text-amber-400 font-bold mt-0.5">→</span>
+                        <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-700 font-medium">
+                          <span className="text-amber-600 font-bold mt-0.5">→</span>
                           <span className="leading-relaxed">{area}</span>
                         </li>
                       ))}
@@ -382,30 +382,30 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
               {/* 4. Roles & Interview Formats Attempted */}
               <div className="card-3d p-6">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300 mb-4">
-                  <Layers className="w-4 h-4 text-brand-cyan" />
+                <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-slate-900 mb-4">
+                  <Layers className="w-4 h-4 text-cyan-600" />
                   <span>Coverage: Roles & Formats Attempted</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Roles */}
                   <div className="space-y-2">
-                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+                    <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider block">
                       Target Tracks
                     </span>
                     <div className="space-y-2">
                       {intelligence.roles_attempted.map((r) => (
                         <div
                           key={r.role}
-                          className="p-2.5 rounded-xl bg-dark-900 border border-slate-800 flex items-center justify-between text-xs"
+                          className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs font-medium shadow-xs"
                         >
-                          <span className="font-semibold text-white capitalize">{r.role}</span>
+                          <span className="font-extrabold text-slate-900 capitalize">{r.role}</span>
                           <div className="flex items-center gap-2">
-                            <span className="text-[11px] text-slate-400 font-mono">
+                            <span className="text-[11px] text-slate-500 font-mono font-semibold">
                               {r.count} session(s)
                             </span>
                             {r.average_score !== null && (
-                              <span className="px-2 py-0.5 rounded bg-brand-500/10 border border-brand-500/20 text-brand-300 font-mono font-bold text-[10px]">
+                              <span className="px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-mono font-bold text-[10px]">
                                 {r.average_score}% avg
                               </span>
                             )}
@@ -417,24 +417,24 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
                   {/* Interview Types */}
                   <div className="space-y-2">
-                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+                    <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider block">
                       Interview Formats
                     </span>
                     <div className="space-y-2">
                       {intelligence.interview_types_attempted.map((t) => (
                         <div
                           key={t.interview_type}
-                          className="p-2.5 rounded-xl bg-dark-900 border border-slate-800 flex items-center justify-between text-xs"
+                          className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs font-medium shadow-xs"
                         >
-                          <span className="font-semibold text-white capitalize">
+                          <span className="font-extrabold text-slate-900 capitalize">
                             {t.interview_type.replace('_', ' ')}
                           </span>
                           <div className="flex items-center gap-2">
-                            <span className="text-[11px] text-slate-400 font-mono">
+                            <span className="text-[11px] text-slate-500 font-mono font-semibold">
                               {t.count} session(s)
                             </span>
                             {t.average_score !== null && (
-                              <span className="px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 font-mono font-bold text-[10px]">
+                              <span className="px-2 py-0.5 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-700 font-mono font-bold text-[10px]">
                                 {t.average_score}% avg
                               </span>
                             )}
@@ -446,34 +446,32 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 </div>
               </div>
 
-              {/* 5. Recent Improvements & Suggested Practice Areas */}
+              {/* 5. Recent Improvements & Practice Areas */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Recent Improvements */}
                 <div className="card-3d p-6">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-300 mb-4">
-                    <Sparkles className="w-4 h-4 text-indigo-400" />
+                  <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-indigo-600 mb-4">
+                    <Sparkles className="w-4 h-4 text-indigo-600" />
                     <span>Recent Session Improvements</span>
                   </div>
                   <ul className="space-y-2.5">
                     {intelligence.recent_improvements.map((imp, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-xs text-slate-200">
-                        <span className="text-indigo-400 mt-0.5 font-bold">↑</span>
+                      <li key={idx} className="flex items-start gap-2 text-xs text-slate-700 font-medium">
+                        <span className="text-indigo-600 mt-0.5 font-bold">↑</span>
                         <span className="leading-relaxed">{imp}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                {/* Suggested Practice Areas */}
                 <div className="card-3d p-6">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-cyan mb-4">
-                    <Target className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-cyan-600 mb-4">
+                    <Target className="w-4 h-4 text-cyan-600" />
                     <span>Suggested Actionable Practice</span>
                   </div>
                   <ul className="space-y-2.5">
                     {intelligence.suggested_practice_areas.map((act, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-xs text-slate-200">
-                        <span className="text-brand-cyan mt-0.5 font-bold">✦</span>
+                      <li key={idx} className="flex items-start gap-2 text-xs text-slate-700 font-medium">
+                        <span className="text-cyan-600 mt-0.5 font-bold">✦</span>
                         <span className="leading-relaxed">{act}</span>
                       </li>
                     ))}
@@ -489,15 +487,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       {activeTab === 'settings' && (
         <div id="tabpanel-settings" role="tabpanel" aria-labelledby="tab-settings" className="animate-fadeIn space-y-6">
           {successMsg && (
-            <div role="status" aria-live="polite" className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2.5">
-              <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div role="status" aria-live="polite" className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs flex items-center gap-2.5 font-semibold">
+              <Check className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>{successMsg}</span>
             </div>
           )}
 
           {errorMsg && (
-            <div role="alert" aria-live="assertive" className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <div role="alert" aria-live="assertive" className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5 font-semibold">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
@@ -505,14 +503,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <form onSubmit={handleSave} className="card-3d p-6 sm:p-8 space-y-6">
             {/* Personal Details Section */}
             <div className="space-y-4">
-              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                <User className="w-3.5 h-3.5 text-brand-400" />
+              <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <User className="w-3.5 h-3.5 text-indigo-600" />
                 <span>Personal Identity</span>
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="profile-name" className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label htmlFor="profile-name" className="block text-xs font-bold text-slate-700 mb-1.5">
                     Full Name
                   </label>
                   <input
@@ -521,12 +519,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    className="w-full bg-dark-900 border border-slate-800 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500 transition-colors"
+                    className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium shadow-sm"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="profile-email" className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label htmlFor="profile-email" className="block text-xs font-bold text-slate-700 mb-1.5">
                     Email Address (Registered)
                   </label>
                   <div className="relative">
@@ -535,81 +533,81 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                       type="email"
                       value={candidate.email}
                       disabled
-                      className="w-full bg-dark-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-400 cursor-not-allowed select-none"
+                      className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-500 cursor-not-allowed select-none font-medium"
                     />
-                    <ShieldCheck className="w-4 h-4 text-emerald-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 absolute right-3.5 top-1/2 -translate-y-1/2" />
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Target Role and Experience */}
-            <div className="border-t border-slate-800/80 pt-6 space-y-4">
-              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                <Briefcase className="w-3.5 h-3.5 text-brand-cyan" />
+            <div className="border-t border-slate-200/80 pt-6 space-y-4">
+              <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <Briefcase className="w-3.5 h-3.5 text-cyan-600" />
                 <span>Career & Interview Target</span>
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="profile-target-role" className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label htmlFor="profile-target-role" className="block text-xs font-bold text-slate-700 mb-1.5">
                     Target Role
                   </label>
                   <select
                     id="profile-target-role"
                     value={targetRole}
                     onChange={(e) => setTargetRole(e.target.value)}
-                    className="w-full bg-dark-900 border border-slate-800 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500 transition-colors cursor-pointer"
+                    className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all cursor-pointer font-medium shadow-sm"
                   >
                     {ROLES.map((r) => (
-                      <option key={r} value={r} className="bg-dark-900">{r}</option>
+                      <option key={r} value={r} className="bg-white text-slate-900">{r}</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label htmlFor="profile-experience-level" className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label htmlFor="profile-experience-level" className="block text-xs font-bold text-slate-700 mb-1.5">
                     Experience Level
                   </label>
                   <select
                     id="profile-experience-level"
                     value={experienceLevel}
                     onChange={(e) => setExperienceLevel(e.target.value)}
-                    className="w-full bg-dark-900 border border-slate-800 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500 transition-colors cursor-pointer"
+                    className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all cursor-pointer font-medium shadow-sm"
                   >
                     {EXPERIENCE_LEVELS.map((lvl) => (
-                      <option key={lvl.id} value={lvl.id} className="bg-dark-900">{lvl.label}</option>
+                      <option key={lvl.id} value={lvl.id} className="bg-white text-slate-900">{lvl.label}</option>
                     ))}
                   </select>
                 </div>
               </div>
 
               <div>
-                <label htmlFor="profile-interview-type" className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label htmlFor="profile-interview-type" className="block text-xs font-bold text-slate-700 mb-1.5">
                   Preferred Interview Format
                 </label>
                 <select
                   id="profile-interview-type"
                   value={preferredInterviewType}
                   onChange={(e) => setPreferredInterviewType(e.target.value)}
-                  className="w-full bg-dark-900 border border-slate-800 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500 transition-colors cursor-pointer"
+                  className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all cursor-pointer font-medium shadow-sm"
                 >
                   {INTERVIEW_TYPES.map((t) => (
-                    <option key={t.id} value={t.id} className="bg-dark-900">{t.label}</option>
+                    <option key={t.id} value={t.id} className="bg-white text-slate-900">{t.label}</option>
                   ))}
                 </select>
               </div>
             </div>
 
             {/* Skills */}
-            <div className="border-t border-slate-800/80 pt-6 space-y-4">
-              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                <Code className="w-3.5 h-3.5 text-indigo-400" />
+            <div className="border-t border-slate-200/80 pt-6 space-y-4">
+              <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <Code className="w-3.5 h-3.5 text-indigo-600" />
                 <span>Technical Skills & Stacks</span>
               </h3>
 
               <div>
-                <label htmlFor="profile-skills" className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label htmlFor="profile-skills" className="block text-xs font-bold text-slate-700 mb-1.5">
                   Skills (Comma-separated)
                 </label>
                 <input
@@ -618,21 +616,21 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   value={skills}
                   onChange={(e) => setSkills(e.target.value)}
                   placeholder="e.g. React, TypeScript, Python, Docker, Kubernetes, PostgreSQL"
-                  className="w-full bg-dark-900 border border-slate-800 focus:border-brand-500 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500 transition-colors"
+                  className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium shadow-sm"
                 />
-                <p className="text-[11px] text-slate-500 mt-1.5">
+                <p className="text-[11px] text-slate-500 mt-1.5 font-medium">
                   These skill tags are utilized by the adaptive engine to tailor interview question generation.
                 </p>
               </div>
             </div>
 
             {/* Save Action */}
-            <div className="pt-4 border-t border-slate-800/80 flex items-center justify-end">
+            <div className="pt-4 border-t border-slate-200/80 flex items-center justify-end">
               <button
                 type="submit"
                 disabled={isLoading}
                 aria-busy={isLoading}
-                className="btn-3d px-6 py-2.5 rounded-xl bg-gradient-to-r from-brand-500 to-indigo-600 hover:from-brand-400 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-lg shadow-brand-500/25 disabled:opacity-50 transition-all"
+                className="btn-3d px-6 py-2.5 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-md shadow-indigo-500/20 disabled:opacity-50 transition-all"
               >
                 {isLoading ? (
                   <>

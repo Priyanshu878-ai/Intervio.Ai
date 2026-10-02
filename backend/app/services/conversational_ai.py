@@ -5,7 +5,7 @@ Provides dynamic, candidate-aware reactions and question lead-ins based on seman
 
 import random
 import re
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Optional, Set
 
 STOP_WORDS: Set[str] = {
     "a", "about", "above", "after", "again", "against", "all", "am", "an", "and",
@@ -36,6 +36,92 @@ QUESTION_LEAD_INS: List[str] = [
 ]
 
 
+def detect_conversational_intent(text: str) -> Optional[str]:
+    """
+    Detects non-technical candidate intents from speech/text prior to standard answer evaluation.
+    Returns: 'repeat', 'clarify', 'wait', 'confused', or None.
+    """
+    if not text or not text.strip():
+        return None
+
+    cleaned = text.strip().lower()
+
+    # 1. Repeat request (MUST be detected & take priority)
+    repeat_patterns = [
+        "repeat the question",
+        "repeat that",
+        "say that again",
+        "say it again",
+        "what was the question",
+        "can you repeat",
+        "could you repeat",
+        "please repeat",
+        "pardon me",
+        "didn't catch that",
+        "did not catch that"
+    ]
+    if any(pattern in cleaned for pattern in repeat_patterns):
+        return "repeat"
+
+    # 2. Clarification request
+    clarify_patterns = [
+        "can you clarify",
+        "could you clarify",
+        "what do you mean",
+        "explain the question",
+        "rephrase the question",
+        "clarify the question",
+        "what are you looking for"
+    ]
+    if any(pattern in cleaned for pattern in clarify_patterns):
+        return "clarify"
+
+    # 3. Request time / pause
+    wait_patterns = [
+        "give me a moment",
+        "give me a second",
+        "let me think",
+        "hold on",
+        "one moment",
+        "wait a second",
+        "just a minute",
+        "need a minute"
+    ]
+    if any(pattern in cleaned for pattern in wait_patterns):
+        return "wait"
+
+    # 4. Express confusion
+    confused_patterns = [
+        "didn't understand",
+        "did not understand",
+        "don't understand",
+        "do not understand",
+        "im confused",
+        "i'm confused",
+        "not sure what you mean",
+        "not sure what you're asking",
+        "don't follow",
+        "do not follow"
+    ]
+    if any(pattern in cleaned for pattern in confused_patterns):
+        return "confused"
+
+    return None
+
+
+def get_conversational_intro(role: str) -> str:
+    """
+    Generates a natural, conversational intro greeting prior to beginning technical questions.
+    """
+    cleaned_role = (role or "technical candidate").strip()
+    intros = [
+        f"Welcome to your AI interview assessment for the {cleaned_role} position. I'll be guiding you through a few technical questions today to evaluate your skills.",
+        f"Hello! Thank you for joining today's session for the {cleaned_role} role. I'm excited to explore your technical experience.",
+        f"Welcome! I'm your AI interviewer for the {cleaned_role} position. We'll go through a series of practical technical scenarios together.",
+    ]
+    return random.choice(intros)
+
+
 def extract_key_phrase(text: str, fallback: str = "this topic") -> str:
     """Extracts a prominent 1-2 word noun phrase from candidate answer or question text."""
     words = re.findall(r"\b[a-zA-Z]{3,}\b", text)
@@ -60,7 +146,6 @@ def categorize_answer_quality(
     perf_level = analysis_res.get("performance_level", "average")
     cleaned = answer_text.strip().lower()
     words = cleaned.split()
-    word_count = len(words)
 
     # 1. Unclear / Doubtful markers (checked first)
     unclear_phrases = ["not sure", "dont know", "don't know", "no idea", "maybe", "not really clear", "forget"]
@@ -141,3 +226,4 @@ def format_conversational_question(question_text: str) -> str:
         lead_in = random.choice(QUESTION_LEAD_INS)
         return f"{lead_in} {question_text}"
     return question_text
+

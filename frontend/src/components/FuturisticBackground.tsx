@@ -48,7 +48,6 @@ export const FuturisticBackground: React.FC = () => {
 
     const handlePointerMove = (e: MouseEvent) => {
       if (prefersReducedMotion) return;
-      // Normalize mouse to -1 .. 1 from screen center
       targetMouseX = (e.clientX / (window.innerWidth || 1)) * 2 - 1;
       targetMouseY = (e.clientY / (window.innerHeight || 1)) * 2 - 1;
     };
@@ -60,7 +59,7 @@ export const FuturisticBackground: React.FC = () => {
     window.addEventListener('pointermove', handlePointerMove, { passive: true });
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Create 3D points on a geometric floating neural topology
+    // Create 3D points on a light floating geometric neural topology
     const points: Point3D[] = [];
     const GRID_COLS = 8;
     const GRID_ROWS = 6;
@@ -86,7 +85,7 @@ export const FuturisticBackground: React.FC = () => {
       }
     }
 
-    // Add orbiting accent nodes
+    // Orbiting accent nodes
     for (let i = 0; i < 14; i++) {
       const angle = (i / 14) * Math.PI * 2;
       const rad = 260 + (i % 3) * 60;
@@ -129,7 +128,6 @@ export const FuturisticBackground: React.FC = () => {
 
       time += 0.012;
 
-      // Smooth mouse easing
       mouseX += (targetMouseX - mouseX) * 0.04;
       mouseY += (targetMouseY - mouseY) * 0.04;
 
@@ -139,7 +137,6 @@ export const FuturisticBackground: React.FC = () => {
       const centerY = height / 2;
       const focalLength = Math.max(width, height) * 0.75;
 
-      // Rotation angles driven by ambient flow + subtle cursor interaction
       const rotY = mouseX * 0.22 + Math.sin(time * 0.4) * 0.08;
       const rotX = -mouseY * 0.18 + Math.cos(time * 0.35) * 0.06;
 
@@ -148,7 +145,6 @@ export const FuturisticBackground: React.FC = () => {
       const cosX = Math.cos(rotX);
       const sinX = Math.sin(rotX);
 
-      // Project 3D points
       interface ProjectedPoint {
         sx: number;
         sy: number;
@@ -161,31 +157,28 @@ export const FuturisticBackground: React.FC = () => {
 
       for (let i = 0; i < points.length; i++) {
         const p = points[i];
-        // Ambient undulating motion
         const currX = p.baseX + Math.sin(time * p.speed * 80 + p.phase) * 18;
         const currY = p.baseY + Math.cos(time * p.speed * 70 + p.phase) * 14;
         const currZ = p.baseZ + Math.sin(time * p.speed * 60 + p.phase) * 35;
 
-        // 3D rotation around Y then X
         const x1 = currX * cosY + currZ * sinY;
         const z1 = -currX * sinY + currZ * cosY;
 
         const y2 = currY * cosX - z1 * sinX;
-        const z2 = currY * sinX + z1 * cosX + 450; // Camera distance offset
+        const z2 = currY * sinX + z1 * cosX + 450;
 
         if (z2 > 20) {
           const scale = focalLength / z2;
           const sx = centerX + x1 * scale;
           const sy = centerY + y2 * scale;
-          // Depth fading
-          const depthAlpha = Math.max(0.1, Math.min(0.65, 1 - (z2 - 150) / DEPTH_SPAN));
+          const depthAlpha = Math.max(0.1, Math.min(0.6, 1 - (z2 - 150) / DEPTH_SPAN));
           projected.push({ sx, sy, scale, alpha: depthAlpha, orig: p });
         }
       }
 
-      // Draw glowing cyber filaments between adjacent nodes in batched single stroke
+      // Draw subtle pastel filaments between nodes
       ctx.lineWidth = 1;
-      ctx.strokeStyle = 'rgba(6, 182, 212, 0.12)';
+      ctx.strokeStyle = 'rgba(99, 102, 241, 0.14)';
       const maxDist = 175;
       const maxDistSq = maxDist * maxDist;
 
@@ -206,21 +199,20 @@ export const FuturisticBackground: React.FC = () => {
       }
       ctx.stroke();
 
-      // Draw points with ambient glowing pulses (zero DOM gradient allocations for 60fps GC freedom)
+      // Draw node dots
       for (let i = 0; i < projected.length; i++) {
         const p = projected[i];
         const pulse = 0.8 + Math.sin(time * 3 + p.orig.phase) * 0.2;
         const radius = Math.max(1.2, p.scale * 2.2 * pulse);
 
-        // Node outer glow
-        const glowRad = radius * 3.5;
-        ctx.fillStyle = `rgba(6, 182, 212, ${p.alpha * 0.16})`;
+        // Node glow
+        ctx.fillStyle = `rgba(99, 102, 241, ${p.alpha * 0.15})`;
         ctx.beginPath();
-        ctx.arc(p.sx, p.sy, glowRad, 0, Math.PI * 2);
+        ctx.arc(p.sx, p.sy, radius * 3, 0, Math.PI * 2);
         ctx.fill();
 
         // Node core
-        ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha * 0.85})`;
+        ctx.fillStyle = `rgba(79, 70, 229, ${p.alpha * 0.65})`;
         ctx.beginPath();
         ctx.arc(p.sx, p.sy, radius, 0, Math.PI * 2);
         ctx.fill();
@@ -254,36 +246,43 @@ export const FuturisticBackground: React.FC = () => {
 
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-      {/* 3D Dynamic Interactive Canvas */}
-      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block opacity-75" />
+      {/* 3D Canvas */}
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block opacity-70" />
 
-      {/* Cyberpunk Grid Overlay with Radial Vignette */}
+      {/* Light Mesh Overlay */}
       <div 
-        className="absolute inset-0 opacity-40 mix-blend-screen"
+        className="absolute inset-0 opacity-60"
         style={{
           backgroundImage: `
             linear-gradient(to right, rgba(99, 102, 241, 0.05) 1px, transparent 1px),
             linear-gradient(to bottom, rgba(6, 182, 212, 0.05) 1px, transparent 1px)
           `,
-          backgroundSize: '64px 64px',
+          backgroundSize: '48px 48px',
           maskImage: 'radial-gradient(ellipse 80% 70% at 50% 30%, #000 30%, transparent 85%)',
           WebkitMaskImage: 'radial-gradient(ellipse 80% 70% at 50% 30%, #000 30%, transparent 85%)',
         }}
       />
 
-      {/* Ambient Atmospheric Cyan & Violet Depth Orbs */}
+      {/* Soft Ambient Pastel Orbs */}
       <div 
-        className="absolute -top-[15%] left-[10%] w-[650px] h-[650px] rounded-full filter blur-[100px] opacity-25"
+        className="absolute -top-[10%] left-[15%] w-[650px] h-[650px] rounded-full filter blur-[100px] opacity-40 pointer-events-none"
         style={{
-          background: 'radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(99, 102, 241, 0) 70%)',
-          animation: 'floatOrb 24s ease-in-out infinite alternate',
+          background: 'radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0) 70%)',
+          animation: 'floatOrb 22s ease-in-out infinite alternate',
         }}
       />
       <div 
-        className="absolute top-[35%] -right-[10%] w-[600px] h-[600px] rounded-full filter blur-[110px] opacity-20"
+        className="absolute top-[35%] -right-[5%] w-[600px] h-[600px] rounded-full filter blur-[110px] opacity-35 pointer-events-none"
         style={{
-          background: 'radial-gradient(circle, rgba(6, 182, 212, 0.25) 0%, rgba(6, 182, 212, 0) 70%)',
-          animation: 'floatOrb2 28s ease-in-out infinite alternate',
+          background: 'radial-gradient(circle, rgba(6, 182, 212, 0.10) 0%, rgba(6, 182, 212, 0) 70%)',
+          animation: 'floatOrb2 26s ease-in-out infinite alternate',
+        }}
+      />
+      <div 
+        className="absolute -bottom-[10%] left-[30%] w-[550px] h-[550px] rounded-full filter blur-[100px] opacity-30 pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle, rgba(139, 92, 246, 0.08) 0%, rgba(139, 92, 246, 0) 70%)',
+          animation: 'floatOrb 18s ease-in-out infinite alternate-reverse',
         }}
       />
     </div>

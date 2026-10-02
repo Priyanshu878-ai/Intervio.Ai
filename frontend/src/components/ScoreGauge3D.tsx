@@ -28,10 +28,10 @@ export const ScoreGauge3D: React.FC<ScoreGauge3DProps> = ({
   const isAvg = performanceLevel === 'average';
 
   const levelColor = isStrong 
-    ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' 
+    ? 'text-emerald-700 bg-emerald-50 border-emerald-200/80' 
     : isAvg 
-    ? 'text-indigo-300 bg-indigo-500/10 border-indigo-500/30' 
-    : 'text-amber-400 bg-amber-500/10 border-amber-500/30';
+    ? 'text-indigo-700 bg-indigo-50 border-indigo-200/80' 
+    : 'text-amber-700 bg-amber-50 border-amber-200/80';
 
   const motivationalMessage = isStrong
     ? 'Outstanding Competency & Technical Depth'
@@ -49,13 +49,13 @@ export const ScoreGauge3D: React.FC<ScoreGauge3DProps> = ({
     <div role="region" aria-label="Holistic Evaluation Score" className="card-3d p-6 relative overflow-hidden flex flex-col items-center justify-center">
       {/* Background ambient depth glow */}
       <div 
-        className={`absolute w-44 h-44 rounded-full blur-3xl opacity-20 pointer-events-none ${
-          isStrong ? 'bg-emerald-500' : isAvg ? 'bg-indigo-500' : 'bg-amber-500'
+        className={`absolute w-44 h-44 rounded-full blur-3xl opacity-15 pointer-events-none ${
+          isStrong ? 'bg-emerald-400' : isAvg ? 'bg-indigo-400' : 'bg-amber-400'
         }`} 
       />
 
-      <div className="text-xs uppercase font-bold tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
-        <Award className="w-4 h-4 text-brand-400" />
+      <div className="text-xs uppercase font-extrabold tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
+        <Award className="w-4 h-4 text-indigo-600" />
         <span>Holistic Evaluation Score</span>
       </div>
 
@@ -68,8 +68,8 @@ export const ScoreGauge3D: React.FC<ScoreGauge3DProps> = ({
               <stop offset="100%" stopColor="#06B6D4" />
             </linearGradient>
             <linearGradient id="score-grad-avg" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#6366F1" />
-              <stop offset="100%" stopColor="#38BDF8" />
+              <stop offset="0%" stopColor="#4F46E5" />
+              <stop offset="100%" stopColor="#06B6D4" />
             </linearGradient>
             <linearGradient id="score-grad-weak" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#F59E0B" />
@@ -84,7 +84,7 @@ export const ScoreGauge3D: React.FC<ScoreGauge3DProps> = ({
             r={radius}
             stroke="currentColor"
             strokeWidth="11"
-            className="text-dark-850"
+            className="text-slate-100"
             fill="transparent"
           />
 
@@ -105,10 +105,10 @@ export const ScoreGauge3D: React.FC<ScoreGauge3DProps> = ({
 
         {/* Center 3D Plate */}
         <div className="absolute flex flex-col items-center justify-center text-center">
-          <span className="text-4xl font-extrabold text-white tracking-tight drop-shadow-md">
+          <span className="text-4xl font-black text-slate-900 tracking-tight drop-shadow-sm">
             {displayScore}
           </span>
-          <span className="text-[11px] text-slate-400 font-mono">/ 100</span>
+          <span className="text-[11px] text-slate-500 font-semibold font-mono">/ 100</span>
         </div>
       </div>
 
@@ -117,28 +117,28 @@ export const ScoreGauge3D: React.FC<ScoreGauge3DProps> = ({
         <div className={`px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-sm ${levelColor}`}>
           {performanceLevel ? `${performanceLevel} tier` : 'EVALUATION RECORD'}
         </div>
-        <div className="text-[11px] text-slate-400 font-medium">
+        <div className="text-[11px] text-slate-600 font-semibold">
           {motivationalMessage}
         </div>
       </div>
 
       {/* Mini Dimensions */}
-      <div className="w-full mt-6 pt-5 border-t border-slate-800/80 grid grid-cols-3 gap-2 text-center">
-        <div className="bg-dark-900/60 p-2.5 rounded-lg border border-slate-800">
-          <div className="text-[10px] text-slate-400 uppercase font-semibold">Technical</div>
-          <div className="text-sm font-bold text-white mt-0.5">
+      <div className="w-full mt-6 pt-5 border-t border-slate-200/80 grid grid-cols-3 gap-2 text-center">
+        <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 shadow-xs">
+          <div className="text-[10px] text-slate-500 uppercase font-extrabold">Technical</div>
+          <div className="text-sm font-extrabold text-slate-900 mt-0.5">
             {technicalScore !== null && technicalScore !== undefined ? Math.round(technicalScore) : '—'}
           </div>
         </div>
-        <div className="bg-dark-900/60 p-2.5 rounded-lg border border-slate-800">
-          <div className="text-[10px] text-slate-400 uppercase font-semibold">Relevance</div>
-          <div className="text-sm font-bold text-white mt-0.5">
+        <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 shadow-xs">
+          <div className="text-[10px] text-slate-500 uppercase font-extrabold">Relevance</div>
+          <div className="text-sm font-extrabold text-slate-900 mt-0.5">
             {relevanceScore !== null && relevanceScore !== undefined ? Math.round(relevanceScore) : '—'}
           </div>
         </div>
-        <div className="bg-dark-900/60 p-2.5 rounded-lg border border-slate-800">
-          <div className="text-[10px] text-slate-400 uppercase font-semibold">Delivery</div>
-          <div className="text-sm font-bold text-white mt-0.5">
+        <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 shadow-xs">
+          <div className="text-[10px] text-slate-500 uppercase font-extrabold">Delivery</div>
+          <div className="text-sm font-extrabold text-slate-900 mt-0.5">
             {communicationScore !== null && communicationScore !== undefined ? Math.round(communicationScore) : '—'}
           </div>
         </div>

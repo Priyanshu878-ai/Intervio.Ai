@@ -17,7 +17,7 @@ export const ProgressTrendChart: React.FC<ProgressTrendChartProps> = ({
 
   if (!performanceTrend || performanceTrend.length === 0) {
     return (
-      <div className="py-8 text-center text-slate-500 text-xs font-medium">
+      <div className="py-8 text-center text-slate-500 text-xs font-semibold">
         No evaluation trend points available yet.
       </div>
     );
@@ -81,15 +81,15 @@ export const ProgressTrendChart: React.FC<ProgressTrendChartProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4 text-xs">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-brand-400 border border-brand-300 shadow-sm shadow-brand-500/30" />
-              <span className="text-slate-300 font-semibold">Overall Score</span>
+              <span className="w-3 h-3 rounded-full bg-indigo-600 border border-indigo-400 shadow-sm" />
+              <span className="text-slate-800 font-bold">Overall Score</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-cyan-400 border border-cyan-300 shadow-sm shadow-cyan-500/30" />
-              <span className="text-slate-300 font-semibold">Communication</span>
+              <span className="w-3 h-3 rounded-full bg-cyan-500 border border-cyan-400 shadow-sm" />
+              <span className="text-slate-800 font-bold">Communication</span>
             </div>
           </div>
-          <div className="text-[11px] text-slate-500 font-mono">
+          <div className="text-[11px] text-slate-500 font-semibold font-mono">
             {n} evaluated session(s)
           </div>
         </div>
@@ -105,21 +105,21 @@ export const ProgressTrendChart: React.FC<ProgressTrendChartProps> = ({
           <defs>
             {/* Area gradient for overall score */}
             <linearGradient id="area-grad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#818cf8" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="#818cf8" stopOpacity="0.0" />
+              <stop offset="0%" stopColor="#6366f1" stopOpacity="0.18" />
+              <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
             </linearGradient>
 
             {/* Overall line gradient */}
             <linearGradient id="perf-line-grad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#6366f1" />
-              <stop offset="50%" stopColor="#818cf8" />
-              <stop offset="100%" stopColor="#38bdf8" />
+              <stop offset="0%" stopColor="#4f46e5" />
+              <stop offset="50%" stopColor="#6366f1" />
+              <stop offset="100%" stopColor="#06b6d4" />
             </linearGradient>
 
             {/* Communication line gradient */}
             <linearGradient id="comm-line-grad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#06b6d4" />
-              <stop offset="100%" stopColor="#22d3ee" />
+              <stop offset="0%" stopColor="#0891b2" />
+              <stop offset="100%" stopColor="#06b6d4" />
             </linearGradient>
           </defs>
 
@@ -133,8 +133,8 @@ export const ProgressTrendChart: React.FC<ProgressTrendChartProps> = ({
                   y1={y}
                   x2={width - paddingX}
                   y2={y}
-                  stroke="#334155"
-                  strokeOpacity="0.3"
+                  stroke="#e2e8f0"
+                  strokeOpacity="0.9"
                   strokeDasharray="4 4"
                 />
                 {!compact && (
@@ -142,7 +142,7 @@ export const ProgressTrendChart: React.FC<ProgressTrendChartProps> = ({
                     x={paddingX - 8}
                     y={y + 3}
                     textAnchor="end"
-                    className="text-[9px] fill-slate-500 font-mono"
+                    className="text-[9px] fill-slate-400 font-mono font-semibold"
                   >
                     {level}%
                   </text>
@@ -194,17 +194,17 @@ export const ProgressTrendChart: React.FC<ProgressTrendChartProps> = ({
                 onMouseEnter={() => setHoveredIdx(i)}
                 onMouseLeave={() => setHoveredIdx(null)}
               >
-                {/* Subtle vertical indicator on hover */}
+                {/* Vertical indicator on hover */}
                 {isHovered && (
                   <line
                     x1={cx}
                     y1={paddingY}
                     x2={cx}
                     y2={height - paddingY}
-                    stroke="#818cf8"
+                    stroke="#6366f1"
                     strokeWidth="1.5"
                     strokeDasharray="3 3"
-                    className="opacity-75"
+                    className="opacity-60"
                   />
                 )}
 
@@ -213,7 +213,7 @@ export const ProgressTrendChart: React.FC<ProgressTrendChartProps> = ({
                   cx={cx}
                   cy={cy}
                   r={isHovered ? 8 : 5}
-                  className="fill-brand-500/30 transition-all duration-150"
+                  className="fill-indigo-500/20 transition-all duration-150"
                 />
 
                 {/* Point dot */}
@@ -221,7 +221,7 @@ export const ProgressTrendChart: React.FC<ProgressTrendChartProps> = ({
                   cx={cx}
                   cy={cy}
                   r={isHovered ? 5 : 3.5}
-                  className="fill-white stroke-brand-500 stroke-2 transition-all duration-150"
+                  className="fill-white stroke-indigo-600 stroke-2 transition-all duration-150"
                 />
 
                 {/* Score label on point */}
@@ -230,7 +230,7 @@ export const ProgressTrendChart: React.FC<ProgressTrendChartProps> = ({
                   y={cy - 10}
                   textAnchor="middle"
                   className={`text-[10px] font-mono font-bold transition-opacity ${
-                    isHovered ? 'fill-white opacity-100' : 'fill-slate-400 opacity-80'
+                    isHovered ? 'fill-indigo-600 opacity-100' : 'fill-slate-600 opacity-80'
                   }`}
                 >
                   {p.score}%
@@ -241,7 +241,7 @@ export const ProgressTrendChart: React.FC<ProgressTrendChartProps> = ({
                   x={cx}
                   y={height - 8}
                   textAnchor="middle"
-                  className="text-[9px] font-mono fill-slate-500 uppercase"
+                  className="text-[9px] font-mono fill-slate-500 uppercase font-bold"
                 >
                   S{i + 1}
                 </text>
@@ -253,16 +253,16 @@ export const ProgressTrendChart: React.FC<ProgressTrendChartProps> = ({
 
       {/* Interactive Tooltip Card for Active Point */}
       {hoveredIdx !== null && validPoints[hoveredIdx] && (
-        <div className="mt-3 p-3 rounded-xl bg-dark-900/95 border border-slate-700/80 backdrop-blur-md shadow-xl flex flex-wrap items-center justify-between gap-4 animate-fadeIn">
+        <div className="mt-3 p-3 rounded.2xl bg-white border border-slate-200/90 shadow-lg flex flex-wrap items-center justify-between gap-4 animate-fadeIn">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-300">
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
               <Award className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-bold text-white capitalize">
+              <div className="text-xs font-bold text-slate-900 capitalize">
                 Session #{hoveredIdx + 1} • {validPoints[hoveredIdx].role}
               </div>
-              <div className="text-[10px] text-slate-400 font-mono">
+              <div className="text-[10px] text-slate-500 font-mono font-medium">
                 {new Date(validPoints[hoveredIdx].created_at).toLocaleDateString(undefined, {
                   month: 'short',
                   day: 'numeric',
@@ -276,19 +276,19 @@ export const ProgressTrendChart: React.FC<ProgressTrendChartProps> = ({
 
           <div className="flex items-center gap-4 text-xs font-mono">
             <div>
-              <span className="text-slate-400 text-[10px] block">Overall</span>
-              <span className="text-brand-300 font-bold">{validPoints[hoveredIdx].score}%</span>
+              <span className="text-slate-500 text-[10px] block font-semibold">Overall</span>
+              <span className="text-indigo-600 font-bold">{validPoints[hoveredIdx].score}%</span>
             </div>
             {validPoints[hoveredIdx].commScore !== null && (
               <div>
-                <span className="text-slate-400 text-[10px] block">Delivery</span>
-                <span className="text-cyan-400 font-bold">{validPoints[hoveredIdx].commScore}%</span>
+                <span className="text-slate-500 text-[10px] block font-semibold">Delivery</span>
+                <span className="text-cyan-600 font-bold">{validPoints[hoveredIdx].commScore}%</span>
               </div>
             )}
             {validPoints[hoveredIdx].technical_score !== null && (
               <div>
-                <span className="text-slate-400 text-[10px] block">Technical</span>
-                <span className="text-emerald-400 font-bold">
+                <span className="text-slate-500 text-[10px] block font-semibold">Technical</span>
+                <span className="text-emerald-600 font-bold">
                   {Math.round(validPoints[hoveredIdx].technical_score!)}%
                 </span>
               </div>

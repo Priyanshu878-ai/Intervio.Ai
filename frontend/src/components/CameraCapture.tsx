@@ -380,13 +380,13 @@ export const CameraCapture: React.FC<CameraCaptureProps> = React.memo(({
   return (
     <div className="space-y-4">
       {recordingError && (
-        <div role="alert" aria-live="assertive" className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+        <div role="alert" aria-live="assertive" className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between font-semibold">
           <span>{recordingError}</span>
           <button
             type="button"
             aria-label="Dismiss recording error"
             onClick={() => setRecordingError(null)}
-            className="text-xs font-bold text-rose-400 hover:text-rose-200 cursor-pointer ml-3 shrink-0"
+            className="text-xs font-bold text-rose-700 hover:text-rose-900 cursor-pointer ml-3 shrink-0"
           >
             Dismiss
           </button>
@@ -394,31 +394,31 @@ export const CameraCapture: React.FC<CameraCaptureProps> = React.memo(({
       )}
 
       {/* Camera & Video Box */}
-      <div className="card-3d relative overflow-hidden bg-dark-950 border border-slate-800 rounded-2xl shadow-2xl">
+      <div className="card-3d relative overflow-hidden bg-white border border-slate-200/90 rounded-2xl shadow-md">
         {/* Aspect Container */}
-        <div className="relative w-full aspect-video sm:max-h-[380px] bg-dark-900 flex items-center justify-center overflow-hidden">
+        <div className="relative w-full aspect-video sm:max-h-[380px] bg-slate-900 flex items-center justify-center overflow-hidden">
           {/* Permission Denied or Unsupported Screen */}
           {permissionStatus === 'denied' || permissionStatus === 'unsupported' ? (
             <div className="p-6 text-center space-y-3">
               <CameraOff className="w-12 h-12 text-rose-400 mx-auto opacity-80" />
-              <h4 className="text-sm font-bold text-white">Camera & Microphone Offline</h4>
-              <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+              <h4 className="text-sm font-extrabold text-white">Camera & Microphone Offline</h4>
+              <p className="text-xs text-slate-300 max-w-sm mx-auto leading-relaxed font-medium">
                 {errorMessage || 'Browser camera/microphone permission was denied. You can continue by typing your response in the text editor below.'}
               </p>
               <button
                 type="button"
                 aria-label="Retry camera and microphone permissions"
                 onClick={initMedia}
-                className="px-4 py-2 rounded-lg bg-dark-800 border border-slate-700 hover:border-brand-500 text-xs font-semibold text-white transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white transition-colors cursor-pointer"
               >
                 Retry Permissions
               </button>
             </div>
           ) : permissionStatus === 'pending' ? (
             /* Requesting state */
-            <div className="flex flex-col items-center gap-3 text-slate-400">
-              <span className="w-8 h-8 border-2 border-brand-500/20 border-t-brand-400 rounded-full animate-spin" />
-              <span className="text-xs font-medium">Requesting camera & microphone access...</span>
+            <div className="flex flex-col items-center gap-3 text-slate-300">
+              <span className="w-8 h-8 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
+              <span className="text-xs font-bold">Requesting camera & microphone access...</span>
             </div>
           ) : hasRecorded && recordedVideoUrl ? (
             /* Recorded Preview playback */
@@ -430,8 +430,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = React.memo(({
                 playsInline
                 className="w-full h-full object-cover"
               />
-              <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold flex items-center gap-1.5 backdrop-blur-md">
-                <Check className="w-3 h-3" />
+              <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-emerald-500/90 text-white text-[11px] font-extrabold flex items-center gap-1.5 backdrop-blur-md shadow-md">
+                <Check className="w-3.5 h-3.5" />
                 <span>Response Captured ({formatSec(recordingSeconds)})</span>
               </div>
             </div>
@@ -449,12 +449,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = React.memo(({
               {/* Status Overlays */}
               <div className="absolute top-3 left-3 flex items-center gap-2">
                 {isRecording ? (
-                  <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-rose-600/90 text-white text-xs font-bold font-mono animate-pulse shadow-lg backdrop-blur-md">
+                  <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-rose-600 text-white text-xs font-bold font-mono animate-pulse shadow-lg backdrop-blur-md">
                     <Circle className="w-2.5 h-2.5 fill-current" />
                     <span>REC {formatSec(recordingSeconds)}</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-dark-900/80 border border-slate-700 text-slate-300 text-[11px] font-semibold backdrop-blur-md">
+                  <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 border border-white/20 text-white text-[11px] font-bold backdrop-blur-md">
                     <span className="w-2 h-2 rounded-full bg-emerald-400" />
                     <span>Live Camera</span>
                   </div>
@@ -462,12 +462,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = React.memo(({
               </div>
 
               {/* Real-time Microphone Indicator Overlay */}
-              <div className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-dark-900/80 border border-slate-700/80 backdrop-blur-md">
-                <Volume2 ref={micIconRef} className="w-3.5 h-3.5 text-slate-400" />
-                <div className="w-16 h-1.5 bg-dark-800 rounded-full overflow-hidden flex items-center">
+              <div className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-white/20 backdrop-blur-md">
+                <Volume2 ref={micIconRef} className="w-3.5 h-3.5 text-slate-300" />
+                <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden flex items-center">
                   <div
                     ref={micBarRef}
-                    className="h-full bg-slate-500 transition-all duration-75"
+                    className="h-full bg-slate-400 transition-all duration-75"
                     style={{ width: '8%' }}
                   />
                 </div>
@@ -478,14 +478,14 @@ export const CameraCapture: React.FC<CameraCaptureProps> = React.memo(({
 
         {/* Action Controls Bar */}
         {permissionStatus === 'granted' && (
-          <div className="p-4 bg-dark-900/90 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+          <div className="p-4 bg-slate-50 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                <Camera className="w-3.5 h-3.5 text-brand-cyan" />
+              <div className="flex items-center gap-1.5 text-xs text-slate-600 font-bold">
+                <Camera className="w-3.5 h-3.5 text-indigo-600" />
                 <span>Webcam</span>
               </div>
-              <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                <Mic className="w-3.5 h-3.5 text-brand-emerald" />
+              <div className="flex items-center gap-1.5 text-xs text-slate-600 font-bold">
+                <Mic className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Microphone</span>
               </div>
             </div>
@@ -497,7 +497,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = React.memo(({
                   aria-label="Start recording answer"
                   onClick={startRecording}
                   disabled={isSubmitting}
-                  className="btn-3d px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-lg shadow-rose-600/30 transition-all"
+                  className="btn-3d px-4 py-2.5 rounded-xl text-white text-xs font-extrabold flex items-center gap-2 cursor-pointer shadow-md transition-all"
+                  style={{ background: 'linear-gradient(135deg, #E11D48 0%, #F43F5E 100%)' }}
                 >
                   <Circle className="w-3.5 h-3.5 fill-current" />
                   <span>Start Recording Answer</span>
@@ -509,16 +510,16 @@ export const CameraCapture: React.FC<CameraCaptureProps> = React.memo(({
                   type="button"
                   aria-label="Stop recording answer"
                   onClick={stopRecording}
-                  className="btn-3d px-5 py-2 rounded-xl bg-slate-100 hover:bg-white text-slate-950 text-xs font-bold flex items-center gap-2 cursor-pointer shadow-lg transition-all"
+                  className="btn-3d px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-extrabold flex items-center gap-2 cursor-pointer shadow-md transition-all"
                 >
-                  <Square className="w-3.5 h-3.5 fill-current text-rose-600" />
+                  <Square className="w-3.5 h-3.5 fill-current text-rose-500" />
                   <span>Stop Recording ({formatSec(recordingSeconds)})</span>
                 </button>
               )}
 
               {hasRecorded && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-emerald-400 font-semibold hidden sm:inline">
+                  <span className="text-xs text-emerald-700 font-bold hidden sm:inline">
                     ✓ Video & Audio Ready
                   </span>
                   <button
@@ -526,7 +527,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = React.memo(({
                     aria-label="Retake recording"
                     onClick={handleRetake}
                     disabled={isSubmitting}
-                    className="px-3 py-1.5 rounded-lg bg-dark-800 hover:bg-dark-750 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                    className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
                   >
                     <RotateCcw className="w-3 h-3" />
                     <span>Retake</span>

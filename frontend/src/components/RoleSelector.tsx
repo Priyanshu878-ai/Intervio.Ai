@@ -82,25 +82,19 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
   const suggestions = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) {
-      // Return top 8 general recommendations when query is blank
       return TECHNICAL_ROLES.slice(0, 8);
     }
 
     const matched = TECHNICAL_ROLES.filter((item) => {
       const titleLower = item.title.toLowerCase();
-      // 1. Prefix match (e.g. "jav", "rea", "dat", "clo")
       if (titleLower.startsWith(q)) return true;
-      // 2. Individual word prefix match (e.g. "dev", "eng", "sci")
       const words = titleLower.split(/\s+/);
       if (words.some((w) => w.startsWith(q))) return true;
-      // 3. Substring match
       if (titleLower.includes(q)) return true;
-      // 4. Keyword match
       if (item.keywords.some((k) => k.includes(q))) return true;
       return false;
     });
 
-    // Rank matched items: Exact match > Title prefix > Word prefix > Substring/Keyword
     return matched.sort((a, b) => {
       const aLower = a.title.toLowerCase();
       const bLower = b.title.toLowerCase();
@@ -126,14 +120,12 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
     });
   }, [searchQuery]);
 
-  // Is exact match found?
   const hasExactMatch = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return true;
     return TECHNICAL_ROLES.some((r) => r.title.toLowerCase() === q);
   }, [searchQuery]);
 
-  // Find info about currently selected role
   const selectedRoleInfo = useMemo(() => {
     if (!value) return null;
     const found = TECHNICAL_ROLES.find(
@@ -187,7 +179,6 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
     }
   };
 
-  // Auto-scroll highlighted option into view
   useEffect(() => {
     if (highlightedIndex >= 0 && isOpen) {
       const activeEl = document.getElementById(`role-option-${highlightedIndex}`);
@@ -200,19 +191,19 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
   return (
     <div ref={containerRef} className="space-y-4 relative z-30">
       {/* 1. Selected Role Pill / Card */}
-      <div className="p-3.5 rounded-xl bg-dark-900/90 border border-slate-800 shadow-inner flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-brand-500/20 to-brand-cyan/20 border border-brand-500/30 flex items-center justify-center text-lg shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-lg shrink-0">
             {selectedRoleInfo?.icon || '⚡'}
           </div>
           <div>
-            <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
+            <div className="text-[11px] text-slate-500 font-bold flex items-center gap-1.5">
               <span>Active Target Track</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             </div>
-            <div className="text-sm font-bold text-white tracking-tight flex items-center gap-2">
+            <div className="text-sm font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
               <span>{selectedRoleInfo?.title || 'Backend Developer'}</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-500/15 border border-brand-500/25 text-brand-300 font-mono">
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-mono font-bold">
                 {selectedRoleInfo?.category || 'Standard Track'}
               </span>
             </div>
@@ -227,7 +218,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
             setIsOpen(true);
             inputRef.current?.focus();
           }}
-          className="text-xs font-semibold text-brand-400 hover:text-brand-300 px-3 py-1.5 rounded-lg bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/20 transition-colors self-start sm:self-auto cursor-pointer"
+          className="text-xs font-bold text-indigo-600 hover:text-indigo-700 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/70 transition-all self-start sm:self-auto cursor-pointer"
         >
           Change Role
         </button>
@@ -237,7 +228,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
       <div className="relative z-40">
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-            <Search className="w-4 h-4" />
+            <Search className="w-4 h-4 text-slate-400" />
           </div>
           <input
             ref={inputRef}
@@ -259,7 +250,7 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
             }}
             onKeyDown={handleKeyDown}
             placeholder="Search roles (e.g. Java, React, Data, Cloud) or type custom..."
-            className="w-full bg-dark-900 border border-slate-800 focus:border-brand-500 rounded-xl pl-10 pr-10 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition-all shadow-inner"
+            className="w-full bg-white border border-slate-200 focus:border-indigo-500 rounded-xl pl-10 pr-10 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-sm font-medium"
           />
           {searchQuery ? (
             <button
@@ -269,12 +260,12 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
                 setSearchQuery('');
                 inputRef.current?.focus();
               }}
-              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-white cursor-pointer"
+              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           ) : (
-            <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-500">
+            <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
               <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
             </div>
           )}
@@ -282,17 +273,17 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
 
         {/* Floating Suggestion Dropdown */}
         {isOpen && (
-          <div className="absolute z-50 left-0 right-0 mt-2 bg-dark-900/95 border border-slate-700/90 rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.85)] backdrop-blur-2xl overflow-hidden animate-fadeIn max-h-80 flex flex-col">
-            <div className="px-3.5 py-2 border-b border-slate-800 flex items-center justify-between text-[11px] font-semibold text-slate-400 bg-dark-950/70">
+          <div className="absolute z-50 left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] backdrop-blur-2xl overflow-hidden animate-fadeIn max-h-80 flex flex-col">
+            <div className="px-3.5 py-2 border-b border-slate-200 flex items-center justify-between text-[11px] font-bold text-slate-500 bg-slate-50">
               <span>SUGGESTED ROLES ({suggestions.length})</span>
-              <span className="font-normal text-slate-500">Press ↵ Enter to select</span>
+              <span className="font-semibold text-slate-400">Press ↵ Enter to select</span>
             </div>
 
             <div
               id="role-suggestions-listbox"
               role="listbox"
               aria-label="Suggested Roles"
-              className="overflow-y-auto p-1.5 space-y-1 divide-y divide-slate-800/40 overscroll-contain"
+              className="overflow-y-auto p-1.5 space-y-1 divide-y divide-slate-100 overscroll-contain"
             >
               {suggestions.map((item, idx) => {
                 const isSelected = value.toLowerCase() === item.title.toLowerCase();
@@ -308,34 +299,34 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
                     onMouseEnter={() => setHighlightedIndex(idx)}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all cursor-pointer ${
                       isHighlighted
-                        ? 'bg-brand-500/20 text-white border border-brand-500/40'
+                        ? 'bg-indigo-50 text-indigo-900 font-bold border border-indigo-200'
                         : isSelected
-                        ? 'bg-brand-500/10 text-white'
-                        : 'text-slate-300 hover:bg-dark-800/80 hover:text-white'
+                        ? 'bg-indigo-50/60 text-indigo-900 font-bold'
+                        : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-medium'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-base">{item.icon}</span>
                       <div>
-                        <div className="text-xs font-bold flex items-center gap-2">
+                        <div className="text-xs font-extrabold flex items-center gap-2">
                           <span>{item.title}</span>
                           {isSelected && (
-                            <span className="text-[10px] text-emerald-400 font-normal">
+                            <span className="text-[10px] text-emerald-600 font-bold">
                               (Current)
                             </span>
                           )}
                         </div>
-                        <div className="text-[10px] text-slate-500 font-medium">
+                        <div className="text-[10px] text-slate-500 font-semibold">
                           {item.category}
                         </div>
                       </div>
                     </div>
-                    {isSelected && <Check className="w-4 h-4 text-emerald-400 shrink-0" />}
+                    {isSelected && <Check className="w-4 h-4 text-emerald-600 shrink-0" />}
                   </button>
                 );
               })}
 
-              {/* Custom Role Option when query is typed and not exactly matched */}
+              {/* Custom Role Option */}
               {!hasExactMatch && searchQuery.trim().length > 0 && (
                 <button
                   id={`role-option-${suggestions.length}`}
@@ -346,31 +337,31 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
                   onMouseEnter={() => setHighlightedIndex(suggestions.length)}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all cursor-pointer ${
                     highlightedIndex === suggestions.length
-                      ? 'bg-brand-500/20 text-white border border-brand-500/40'
-                      : 'text-brand-300 bg-brand-500/5 hover:bg-brand-500/15'
+                      ? 'bg-indigo-50 text-indigo-900 border border-indigo-200'
+                      : 'text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100/50'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-md bg-brand-500/20 flex items-center justify-center text-brand-300">
+                    <div className="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center text-indigo-700">
                       <Plus className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-white">
-                        Use custom role: <span className="text-brand-400 underline">"{searchQuery.trim()}"</span>
+                      <div className="text-xs font-bold text-slate-900">
+                        Use custom role: <span className="text-indigo-600 underline">"{searchQuery.trim()}"</span>
                       </div>
-                      <div className="text-[10px] text-slate-400">
+                      <div className="text-[10px] text-slate-500 font-semibold">
                         Create custom interview assessment track
                       </div>
                     </div>
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 font-mono">
+                  <span className="text-[10px] px-2.5 py-0.5 rounded bg-indigo-100 text-indigo-800 font-mono font-bold">
                     Custom
                   </span>
                 </button>
               )}
 
               {suggestions.length === 0 && hasExactMatch && (
-                <div className="p-4 text-center text-xs text-slate-500">
+                <div className="p-4 text-center text-xs text-slate-500 font-semibold">
                   No predefined roles match your query.
                 </div>
               )}
@@ -381,8 +372,8 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
 
       {/* 3. Popular Roles Quick Select Section */}
       <div>
-        <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-          <Sparkles className="w-3 h-3 text-brand-400" />
+        <div className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
           <span>Popular Roles</span>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -394,10 +385,10 @@ export const RoleSelector: React.FC<RoleSelectorProps> = ({ value, onChange, dis
                 type="button"
                 disabled={disabled}
                 onClick={() => handleSelectRole(popRole)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-brand-500 text-white border-brand-400 shadow-md shadow-brand-500/20'
-                    : 'bg-dark-850 hover:bg-dark-800 text-slate-300 hover:text-white border-slate-800 hover:border-slate-700'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20'
+                    : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-xs'
                 }`}
               >
                 {popRole}
