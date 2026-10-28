@@ -270,8 +270,35 @@ class InterviewOrchestrator:
             interview.started_at = datetime.now(timezone.utc)
             db.commit()
 
+        # Idempotency guard: if question has already been answered and evaluated, prevent duplicate advancement
+        existing_answer = db.execute(
+            select(Answer).where(Answer.question_id == question_id)
+        ).scalar_one_or_none()
+
+        if existing_answer and existing_answer.evaluation:
+            all_questions = self._get_questions(db, interview_id)
+            unanswered = [q for q in all_questions if q.answer is None and q.id != question_id]
+            next_q = unanswered[0] if unanswered else None
+            is_completed = interview.status == "completed" or (not next_q and len(all_questions) > 0)
+            return {
+                "interview_id": interview.id,
+                "question_id": question_id,
+                "analysis": {
+                    "final_score": existing_answer.evaluation.overall_score or 0.0,
+                    "feedback": existing_answer.evaluation.feedback or "Already submitted.",
+                    "performance_level": "completed",
+                },
+                "next_question": next_q,
+                "adaptive_strategy": {"action": "idempotent_cached_return"},
+                "contextual_response": "Response already recorded. Proceeding to next question.",
+                "is_completed": is_completed,
+                "session_status": interview.status,
+                "evidence_status": {"reason": "Idempotent duplicate submit prevented."},
+            }
+
         from app.services.conversational_ai import (
             detect_conversational_intent,
+            simplify_question,
             generate_conversational_reaction,
             format_conversational_question,
         )
@@ -288,8 +315,148 @@ class InterviewOrchestrator:
 
         intent = detect_conversational_intent(effective_text)
         if intent:
+            if intent in ("skip", "unanswered"):
+                is_unanswered = (intent == "unanswered")
+                answer_marker = "[UNANSWERED]" if is_unanswered else "[SKIPPED]"
+                # Handle Skip / Unanswered: mark question, record 0.0 evaluation, advance exactly once
+                if existing_answer is None:
+                    existing_answer = Answer(
+                        question_id=question_id,
+                        answer_text=answer_marker,
+                        duration_seconds=0.0,
+                    )
+                    db.add(existing_answer)
+                else:
+                    existing_answer.answer_text = answer_marker
+
+                db.commit()
+                db.refresh(existing_answer)
+
+                existing_eval = db.execute(
+                    select(Evaluation).where(Evaluation.answer_id == existing_answer.id)
+                ).scalar_one_or_none()
+
+                skip_feedback = (
+                    "Question was unanswered due to silence / time expiration."
+                    if is_unanswered
+                    else "Question was skipped by candidate."
+                )
+                if existing_eval is None:
+                    existing_eval = Evaluation(
+                        answer_id=existing_answer.id,
+                        relevance_score=0.0,
+                        technical_score=0.0,
+                        completeness_score=0.0,
+                        communication_score=0.0,
+                        overall_score=0.0,
+                        feedback=skip_feedback,
+                    )
+                    db.add(existing_eval)
+                else:
+                    existing_eval.relevance_score = 0.0
+                    existing_eval.technical_score = 0.0
+                    existing_eval.completeness_score = 0.0
+                    existing_eval.communication_score = 0.0
+                    existing_eval.overall_score = 0.0
+                    existing_eval.feedback = skip_feedback
+
+                db.commit()
+                db.refresh(existing_eval)
+
+                # Calculate next question and completion status
+                all_questions = self._get_questions(db, interview_id)
+                answered_questions = [q for q in all_questions if q.answer is not None]
+                answered_count = len(answered_questions)
+                evaluations = [
+                    q.answer.evaluation
+                    for q in answered_questions
+                    if q.answer and q.answer.evaluation
+                ]
+
+                is_completed, evidence_info = self.evaluate_interview_completion(
+                    interview=interview,
+                    answered_count=answered_count,
+                    evaluations=evaluations,
+                    questions=all_questions,
+                )
+
+                if is_completed:
+                    next_q = None
+                    interview.status = "completed"
+                    if not interview.completed_at:
+                        interview.completed_at = datetime.now(timezone.utc)
+                    for q in all_questions:
+                        if q.answer is None and q.id != question_id:
+                            db.delete(q)
+                    db.commit()
+                    db.refresh(interview)
+                    contextual_response = (
+                        "Time expired for this question. All responses have been recorded, "
+                        "and your assessment is now complete."
+                        if is_unanswered
+                        else (
+                            "Understood, skipping this question. All responses have been recorded, "
+                            "and your assessment is now complete."
+                        )
+                    )
+                else:
+                    unanswered_remaining = [
+                        q for q in all_questions if q.id != question_id and q.answer is None
+                    ]
+                    if unanswered_remaining:
+                        next_q = unanswered_remaining[0]
+                    else:
+                        from app.services.question_service import generate_adaptive_next_question
+                        adaptive_res = generate_adaptive_next_question(
+                            db=db,
+                            interview_id=interview_id,
+                            performance_level="average",
+                        )
+                        next_q = adaptive_res["question"]
+                    contextual_response = (
+                        "No response was detected, so let's move on to the next question."
+                        if is_unanswered
+                        else "No problem at all! We'll skip that question and move on to the next one."
+                    )
+
+                if next_q and next_q.question_text:
+                    next_q.question_text = format_conversational_question(next_q.question_text)
+
+                return {
+                    "interview_id": interview.id,
+                    "question_id": question_id,
+                    "analysis": {
+                        "relevance_score": 0.0,
+                        "technical_score": 0.0,
+                        "completeness_score": 0.0,
+                        "communication_score": 0.0,
+                        "final_score": 0.0,
+                        "performance_level": "unanswered" if is_unanswered else "skipped",
+                        "feedback": skip_feedback,
+                        "strengths": [],
+                        "improvement_areas": ["Question was unanswered" if is_unanswered else "Question was skipped"],
+                        "text_analysis": None,
+                        "audio_analysis": None,
+                        "vision_analysis": None,
+                    },
+                    "next_question": next_q,
+                    "adaptive_strategy": {
+                        "action": "unanswered_question" if is_unanswered else "skip_question",
+                        "target_difficulty": interview.difficulty or "medium",
+                        "reason": "Question unanswered due to silence/timeout" if is_unanswered else "Candidate requested to skip question",
+                    },
+                    "contextual_response": contextual_response,
+                    "is_completed": is_completed,
+                    "session_status": interview.status,
+                    "evidence_status": evidence_info,
+                }
+
+            # Non-advancing intents: repeat, simplify, clarify, wait, confused, dont_know
             if intent == "repeat":
-                contextual_response = "Sure, let me repeat the question for you."
+                contextual_response = f"Sure, let me repeat the question: {question.question_text}"
+            elif intent == "simplify":
+                simplified = simplify_question(question.question_text)
+                contextual_response = f"Sure! In simpler terms: {simplified}"
             elif intent == "clarify":
                 contextual_response = f"To clarify, the question is: {question.question_text}. I'm looking for your practical experience or approach to this topic."
             elif intent == "wait":
@@ -305,10 +472,10 @@ class InterviewOrchestrator:
                 "text_score": None,
                 "audio_score": None,
                 "vision_score": None,
-                "final_score": 50.0,
-                "performance_level": "average",
+                "final_score": None,
+                "performance_level": "conversational_command",
                 "modality_weights_used": {"intent_handling": 1.0},
-                "feedback": f"Conversational intent '{intent}' detected. Question repeated without penalty.",
+                "feedback": f"Conversational intent '{intent}' handled. Question maintained without penalty.",
                 "strengths": [],
                 "improvement_areas": [],
                 "text_analysis": None,
@@ -320,7 +487,7 @@ class InterviewOrchestrator:
                 "interview_id": interview.id,
                 "question_id": question_id,
                 "analysis": intent_analysis,
-                "next_question": question,  # MUST repeat current question, never generate a new question!
+                "next_question": question,  # Retain current question, do not advance
                 "adaptive_strategy": {
                     "action": f"handle_intent_{intent}",
                     "target_difficulty": interview.difficulty or "medium",

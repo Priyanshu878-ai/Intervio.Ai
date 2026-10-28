@@ -149,6 +149,132 @@ class TestHumanLikeConversation(unittest.TestCase):
         self.assertLessEqual(analysis["overall_score"], 15.0)
         self.assertIn("off-topic", analysis["feedback"].lower())
 
+    def test_case_5_simplify_intent(self):
+        """Case 5: 'Please explain in easier words' restates question simply without advancing or scoring."""
+        user_speech = "Please explain in easier words."
+
+        intent = detect_conversational_intent(user_speech)
+        self.assertEqual(intent, "simplify")
+
+        res = interview_orchestrator.submit_answer(
+            db=self.db,
+            interview_id=self.interview.id,
+            question_id=self.question1.id,
+            answer_text=user_speech,
+        )
+
+        self.assertFalse(res["is_completed"])
+        self.assertEqual(res["next_question"].id, self.question1.id)
+        self.assertIsNone(res["analysis"]["final_score"])
+        self.assertIn("simpler", res["contextual_response"].lower())
+
+    def test_case_6_skip_question_advances_exactly_once(self):
+        """Case 6: 'Please skip this question' marks question skipped, scores 0, and advances exactly once."""
+        # Add a second question to test advancement
+        question2 = Question(
+            id=uuid.uuid4(),
+            interview_id=self.interview.id,
+            sequence_number=2,
+            question_text="Describe ACID properties in relational databases.",
+            question_type="technical",
+        )
+        self.db.add(question2)
+        self.db.commit()
+
+        user_speech = "Please skip this question"
+        intent = detect_conversational_intent(user_speech)
+        self.assertEqual(intent, "skip")
+
+        res = interview_orchestrator.submit_answer(
+            db=self.db,
+            interview_id=self.interview.id,
+            question_id=self.question1.id,
+            answer_text=user_speech,
+        )
+
+        # Must advance to question 2
+        self.assertEqual(res["next_question"].id, question2.id)
+        self.assertEqual(res["analysis"]["final_score"], 0.0)
+        self.assertEqual(res["analysis"]["performance_level"], "skipped")
+
+        # Session state must show question 1 answered as skipped
+        session_state = interview_orchestrator.get_session_state(self.db, self.interview.id)
+        self.assertEqual(session_state["answered_questions"], 1)
+        self.assertEqual(session_state["current_question"].id, question2.id)
+
+    def test_case_7_normal_answers_with_uncertainty_not_treated_as_commands(self):
+        """Case 7: Answers with 'let me think' or 'I'm not sure, but...' are evaluated as normal answers."""
+        phrase1 = "Let me think about this. Database indexing uses B-trees or hash tables to speed up search lookups from O(N) to O(log N)."
+        phrase2 = "I'm not sure about the exact RFC number, but HTTP/2 introduces multiplexing and binary framing over a single TCP stream."
+
+        self.assertIsNone(detect_conversational_intent(phrase1))
+        self.assertIsNone(detect_conversational_intent(phrase2))
+
+    def test_case_8_idempotent_duplicate_submit(self):
+        """Case 8: Duplicate submit on the same question does NOT advance a second time."""
+        question2 = Question(
+            id=uuid.uuid4(),
+            interview_id=self.interview.id,
+            sequence_number=2,
+            question_text="Explain Python GIL.",
+            question_type="technical",
+        )
+        self.db.add(question2)
+        self.db.commit()
+
+        # First submit
+        res1 = interview_orchestrator.submit_answer(
+            db=self.db,
+            interview_id=self.interview.id,
+            question_id=self.question1.id,
+            answer_text="[SKIPPED]",
+        )
+        self.assertEqual(res1["next_question"].id, question2.id)
+
+        # Duplicate submit on question 1
+        res2 = interview_orchestrator.submit_answer(
+            db=self.db,
+            interview_id=self.interview.id,
+            question_id=self.question1.id,
+            answer_text="[SKIPPED]",
+        )
+        # Should idempotently return question2, NOT advance past question2
+        self.assertEqual(res2["next_question"].id, question2.id)
+
+    def test_case_9_unanswered_timeout_submission(self):
+        """Case 9: Submitting [UNANSWERED] due to silence timeout or time expiration records 0.0 and advances once."""
+        intent = detect_conversational_intent("[UNANSWERED]")
+        self.assertEqual(intent, "unanswered")
+
+        question2 = Question(
+            id=uuid.uuid4(),
+            interview_id=self.interview.id,
+            sequence_number=2,
+            question_text="Describe how connection pooling works.",
+            question_type="technical",
+        )
+        self.db.add(question2)
+        self.db.commit()
+
+        res = interview_orchestrator.submit_answer(
+            db=self.db,
+            interview_id=self.interview.id,
+            question_id=self.question1.id,
+            answer_text="[UNANSWERED]",
+        )
+
+        # Must advance to question 2
+        self.assertIsNotNone(res["next_question"])
+        self.assertEqual(res["next_question"].id, question2.id)
+        self.assertEqual(res["analysis"]["final_score"], 0.0)
+        self.assertEqual(res["analysis"]["performance_level"], "unanswered")
+        self.assertIn("unanswered", res["analysis"]["feedback"].lower())
+
+        # Session state must show 1 question answered
+        session_state = interview_orchestrator.get_session_state(self.db, self.interview.id)
+        self.assertEqual(session_state["answered_questions"], 1)
+        self.assertEqual(session_state["current_question"].id, question2.id)
+
 
 if __name__ == "__main__":
     unittest.main()

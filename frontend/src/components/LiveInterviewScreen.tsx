@@ -56,13 +56,13 @@ export const LiveInterviewScreen: React.FC<LiveInterviewScreenProps> = ({
     return () => clearInterval(interval);
   }, [currentQuestion?.id]);
 
-  // Auto-complete if session marks is_completed
+  // Auto-complete if session marks is_completed (only in classic view; realtime room coordinates its own voice closing flow)
   useEffect(() => {
-    if (session.is_completed) {
+    if (session.is_completed && viewMode !== 'realtime') {
       setTransitioning('completing');
       onComplete();
     }
-  }, [session.is_completed]);
+  }, [session.is_completed, viewMode, onComplete]);
 
   const formatTime = (totalSeconds: number) => {
     const mins = Math.floor(totalSeconds / 60);

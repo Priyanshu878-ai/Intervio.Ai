@@ -36,10 +36,90 @@ QUESTION_LEAD_INS: List[str] = [
 ]
 
 
+def is_substantive_answer(text: str) -> bool:
+    """
+    Determines whether candidate speech containing uncertainty or thinking pauses
+    (e.g., "let me think", "I'm not sure, but...") is actually part of a substantive
+    technical answer rather than a standalone conversational command or stall.
+    """
+    if not text or not text.strip():
+        return False
+
+    cleaned = text.strip().lower()
+
+    # 1. Uncertainty contrast pattern: "I'm not sure, but...", "I don't know, however..."
+    contrast_match = re.search(
+        r"\b(not sure|don't know|dont know|not certain)\b.*?\b(but|however|although|though|except)\b",
+        cleaned,
+    )
+    if contrast_match:
+        after_connector = cleaned[contrast_match.end():].strip()
+        words_after = re.findall(r"\b[a-zA-Z0-9_-]+\b", after_connector)
+        if len(words_after) >= 2:
+            return True
+
+    # 2. Thinking pause followed by substantive answer: "let me think about...", "give me a moment..."
+    thinking_phrases = [
+        "let me think",
+        "give me a moment",
+        "give me a second",
+        "hold on",
+        "one moment",
+        "wait a second",
+        "just a minute",
+        "need a minute",
+    ]
+    for tp in thinking_phrases:
+        if tp in cleaned:
+            stripped = cleaned.replace(tp, " ")
+            for filler in ["well", "um", "uh", "about", "this", "that"]:
+                stripped = re.sub(r"\b" + filler + r"\b", " ", stripped)
+            tokens = re.findall(r"\b[a-zA-Z0-9_-]+\b", stripped)
+            meaningful = [w for w in tokens if w not in STOP_WORDS]
+            if len(meaningful) >= 3 or len(tokens) >= 6:
+                return True
+
+    return False
+
+
+def simplify_question(question_text: str) -> str:
+    """
+    Restates a technical question in plain, accessible language
+    WITHOUT revealing the expected answer or altering its assessment objective.
+    """
+    if not question_text or not question_text.strip():
+        return "Could you explain the core concept in your own words?"
+
+    cleaned = question_text.strip()
+
+    replacements = [
+        (r"(?i)\bexplain\s+(?:the\s+)?fundamental\s+(?:mechanisms|principles)\s+of\b", "In simple terms, how does"),
+        (r"(?i)\bdiscuss\s+(?:the\s+)?architectural\s+trade-offs\s+of\b", "In basic words, what are the pros and cons of"),
+        (r"(?i)\belaborate\s+on\b", "Can you explain"),
+        (r"(?i)\bdescribe\s+(?:the\s+)?intricacies\s+of\b", "In simple words, how does"),
+        (r"(?i)\bcompare\s+and\s+contrast\b", "In plain language, what are the main differences between"),
+        (r"(?i)\bhow\s+do\s+you\s+approach\s+the\s+design\s+and\s+implementation\s+of\b", "In simple terms, how would you build"),
+    ]
+
+    rephrased = cleaned
+    for pattern, sub in replacements:
+        if re.search(pattern, rephrased):
+            rephrased = re.sub(pattern, sub, rephrased)
+            break
+
+    if rephrased == cleaned:
+        core_q = cleaned.rstrip(".?!")
+        return f"In plain words: {core_q}? Focus on the basic core idea in your own terms."
+    else:
+        return f"{rephrased.rstrip('.?!')}? Please describe the basic idea in your own words."
+
+
 def detect_conversational_intent(text: str) -> Optional[str]:
     """
     Detects non-technical candidate intents from speech/text prior to standard answer evaluation.
-    Returns: 'repeat', 'clarify', 'wait', 'confused', or None.
+    Returns: 'repeat', 'simplify', 'skip', 'clarify', 'wait', 'confused', 'dont_know', or None.
+    Guarantees that substantive technical answers containing uncertainty or thinking phrases
+    (e.g., "let me think", "I'm not sure, but...") are NOT mistaken for commands.
     """
     if not text or not text.strip():
         return None
@@ -56,14 +136,70 @@ def detect_conversational_intent(text: str) -> Optional[str]:
         "can you repeat",
         "could you repeat",
         "please repeat",
+        "repeat please",
+        "one more time",
         "pardon me",
         "didn't catch that",
-        "did not catch that"
+        "did not catch that",
     ]
     if any(pattern in cleaned for pattern in repeat_patterns):
         return "repeat"
 
-    # 2. Clarification request
+    # 2. Simplify request
+    simplify_patterns = [
+        "explain in easier words",
+        "easier words",
+        "simpler words",
+        "in simple terms",
+        "in simpler terms",
+        "simple words",
+        "in plain english",
+        "in plain language",
+        "can you simplify",
+        "could you simplify",
+        "please simplify",
+        "simplify the question",
+        "simplify that",
+        "make it simpler",
+        "explain that more simply",
+        "break it down simply",
+    ]
+    if any(pattern in cleaned for pattern in simplify_patterns):
+        return "simplify"
+
+    # 3. Skip request
+    skip_patterns = [
+        "skip this question",
+        "skip the question",
+        "please skip",
+        "skip it",
+        "can we skip",
+        "could we skip",
+        "let's skip",
+        "lets skip",
+        "i want to skip",
+        "skip to the next",
+        "move on to the next",
+        "move on to next question",
+        "let's move on",
+        "lets move on",
+        "i don't know this concept; let's move on",
+        "i don't know this concept let's move on",
+        "i don't know, let's move on",
+        "i dont know, move on",
+        "i do not know, move on",
+        "pass on this question",
+        "[skipped]",
+        "next question please",
+    ]
+    if any(pattern in cleaned for pattern in skip_patterns):
+        return "skip"
+
+    # 3b. Unanswered timeout marker
+    if "[unanswered]" in cleaned or cleaned == "unanswered":
+        return "unanswered"
+
+    # 4. Clarification request
     clarify_patterns = [
         "can you clarify",
         "could you clarify",
@@ -71,12 +207,17 @@ def detect_conversational_intent(text: str) -> Optional[str]:
         "explain the question",
         "rephrase the question",
         "clarify the question",
-        "what are you looking for"
+        "what are you looking for",
     ]
     if any(pattern in cleaned for pattern in clarify_patterns):
         return "clarify"
 
-    # 3. Request time / pause
+    # Check if candidate provided a substantive technical answer with uncertainty or thinking phrases
+    # before interpreting ambiguous wait/confused/dont_know markers.
+    if is_substantive_answer(cleaned):
+        return None
+
+    # 5. Request time / pause
     wait_patterns = [
         "give me a moment",
         "give me a second",
@@ -85,12 +226,12 @@ def detect_conversational_intent(text: str) -> Optional[str]:
         "one moment",
         "wait a second",
         "just a minute",
-        "need a minute"
+        "need a minute",
     ]
     if any(pattern in cleaned for pattern in wait_patterns):
         return "wait"
 
-    # 4. Express confusion
+    # 6. Express confusion
     confused_patterns = [
         "didn't understand",
         "did not understand",
@@ -101,12 +242,12 @@ def detect_conversational_intent(text: str) -> Optional[str]:
         "not sure what you mean",
         "not sure what you're asking",
         "don't follow",
-        "do not follow"
+        "do not follow",
     ]
     if any(pattern in cleaned for pattern in confused_patterns):
         return "confused"
 
-    # 5. Don't know / Uncertainty acknowledgment
+    # 7. Don't know / Uncertainty acknowledgment
     dont_know_patterns = [
         "i don't know",
         "i dont know",
@@ -116,7 +257,7 @@ def detect_conversational_intent(text: str) -> Optional[str]:
         "no idea",
         "not really sure",
         "don't recall",
-        "cannot recall"
+        "cannot recall",
     ]
     if any(pattern in cleaned for pattern in dont_know_patterns):
         return "dont_know"

@@ -84,7 +84,7 @@ export interface QuestionResponse {
 }
 
 export interface AdaptiveStrategyResponse {
-  performance_level: 'weak' | 'average' | 'strong';
+  performance_level: 'weak' | 'average' | 'strong' | 'skipped' | 'unanswered' | string;
   next_difficulty: string;
   preferred_question_type: string;
   reason: string;
@@ -96,7 +96,7 @@ export interface MultimodalAnalysisResponse {
   audio_score?: number | null;
   vision_score?: number | null;
   final_score: number;
-  performance_level: 'weak' | 'average' | 'strong';
+  performance_level: 'weak' | 'average' | 'strong' | 'skipped' | 'unanswered' | string;
   modality_weights_used: Record<string, number>;
   feedback: string;
   strengths: string[];
