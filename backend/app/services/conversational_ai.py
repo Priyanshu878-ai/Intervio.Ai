@@ -297,9 +297,10 @@ def categorize_answer_quality(
     """
     Classifies candidate answer into: 'strong', 'partial', 'weak', 'unclear', or 'off_topic'.
     """
-    relevance = analysis_res.get("relevance_score", 50.0)
-    overall = analysis_res.get("overall_score", 50.0)
-    perf_level = analysis_res.get("performance_level", "average")
+    text_an = analysis_res.get("text_analysis") or {}
+    relevance = analysis_res.get("relevance_score") or text_an.get("relevance_score") or 50.0
+    overall = analysis_res.get("overall_score") or analysis_res.get("final_score") or text_an.get("overall_score") or 50.0
+    perf_level = text_an.get("performance_level") or analysis_res.get("performance_level", "average")
     cleaned = answer_text.strip().lower()
     words = cleaned.split()
 

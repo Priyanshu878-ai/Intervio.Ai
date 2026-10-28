@@ -98,7 +98,11 @@ class MultimodalFusionEngine:
         final_score = round(weighted_sum, 1)
 
         # Performance level categorization
-        if final_score >= STRONG_THRESHOLD:
+        if text_analysis and text_analysis.get("performance_level") == "off_topic":
+            performance_level = "off_topic"
+        elif text_analysis and text_analysis.get("performance_level") == "no_answer":
+            performance_level = "no_answer"
+        elif final_score >= STRONG_THRESHOLD:
             performance_level = "strong"
         elif final_score >= WEAK_THRESHOLD:
             performance_level = "average"

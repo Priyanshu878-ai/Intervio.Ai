@@ -611,21 +611,72 @@ class InterviewOrchestrator:
             db.commit()
             db.refresh(interview)
         else:
-            # Check if an unanswered question already exists in the pre-generated batch
+            from app.services.adaptive_follow_up import adaptive_follow_up_service
+
             unanswered_remaining = [
                 q for q in all_questions if q.id != question_id and q.answer is None
             ]
-            if unanswered_remaining:
-                next_q = unanswered_remaining[0]
-            else:
-                # Adaptively generate the next question matching candidate performance
-                from app.services.question_service import generate_adaptive_next_question
-                adaptive_res = generate_adaptive_next_question(
-                    db=db,
-                    interview_id=interview_id,
-                    performance_level=perf_level,
+            existing_texts = {q.question_text for q in all_questions}
+
+            # Check eligibility for answer-aware adaptive follow-up
+            follow_up_data = None
+            if adaptive_follow_up_service.is_eligible_for_follow_up(
+                answer_text=effective_text or "",
+                analysis_res=analysis_res,
+                intent=intent,
+            ):
+                follow_up_data = adaptive_follow_up_service.generate_follow_up_question(
+                    question_text=question.question_text,
+                    answer_text=effective_text or "",
+                    analysis_res=analysis_res,
+                    role=interview.role,
+                    exclude_texts=existing_texts,
                 )
-                next_q = adaptive_res["question"]
+
+            if follow_up_data:
+                strategy["action"] = f"adaptive_follow_up_{follow_up_data.get('mode', 'probe')}"
+                strategy["follow_up_topic"] = follow_up_data.get("topic")
+                strategy["follow_up_mode"] = follow_up_data.get("mode")
+
+                if unanswered_remaining:
+                    # Adapt the next pre-generated question into the follow-up question
+                    # This guarantees the total interview question count does NOT increase!
+                    next_q = unanswered_remaining[0]
+                    next_q.question_text = follow_up_data["text"]
+                    next_q.question_type = follow_up_data.get("type", "technical")
+                    db.commit()
+                    db.refresh(next_q)
+                else:
+                    diff_key = (interview.difficulty or "medium").lower().strip()
+                    limits = INTERVIEW_DIFFICULTY_LIMITS.get(diff_key, {"min_questions": 6, "max_questions": 10})
+                    if answered_count < limits["max_questions"]:
+                        next_q = Question(
+                            interview_id=interview_id,
+                            question_text=follow_up_data["text"],
+                            question_type=follow_up_data.get("type", "technical"),
+                            sequence_number=answered_count + 1,
+                        )
+                        db.add(next_q)
+                        db.commit()
+                        db.refresh(next_q)
+                    else:
+                        next_q = None
+                        is_completed = True
+                        interview.status = "completed"
+                        db.commit()
+                        db.refresh(interview)
+            else:
+                # Not eligible (empty answer, off-topic, skipped, unanswered) -> follow existing flow
+                if unanswered_remaining:
+                    next_q = unanswered_remaining[0]
+                else:
+                    from app.services.question_service import generate_adaptive_next_question
+                    adaptive_res = generate_adaptive_next_question(
+                        db=db,
+                        interview_id=interview_id,
+                        performance_level=perf_level,
+                    )
+                    next_q = adaptive_res["question"]
 
         # Generate natural adaptive AI conversational response bridge & follow-up speech
         from app.services.conversational_ai import (
@@ -647,7 +698,8 @@ class InterviewOrchestrator:
             )
 
         if next_q and next_q.question_text:
-            next_q.question_text = format_conversational_question(next_q.question_text)
+            if not follow_up_data:
+                next_q.question_text = format_conversational_question(next_q.question_text)
 
         return {
             "interview_id": interview.id,

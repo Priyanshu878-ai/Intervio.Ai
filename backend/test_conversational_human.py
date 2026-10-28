@@ -275,6 +275,122 @@ class TestHumanLikeConversation(unittest.TestCase):
         self.assertEqual(session_state["answered_questions"], 1)
         self.assertEqual(session_state["current_question"].id, question2.id)
 
+    def test_case_10_adaptive_follow_up_incomplete_answer_probes_missing_concept(self):
+        """Case 10: Incomplete answer probes the missing concept (e.g. write overhead in B-tree indexing)."""
+        # Candidate only mentions lookup speed, omitting write performance / insert overhead
+        incomplete_answer = "Indexes use B-trees to make lookups fast in O(log N) instead of full table scans."
+
+        res = interview_orchestrator.submit_answer(
+            db=self.db,
+            interview_id=self.interview.id,
+            question_id=self.question1.id,
+            answer_text=incomplete_answer,
+        )
+
+        self.assertFalse(res["is_completed"])
+        next_q = res["next_question"]
+        self.assertIsNotNone(next_q)
+        self.assertNotEqual(next_q.id, self.question1.id)
+
+        # Must probe the missing concept (write overhead, insert/update penalty, or composite index)
+        q_text_lower = next_q.question_text.lower()
+        has_probe_concept = any(term in q_text_lower for term in ["write", "insert", "update", "composite", "trade-off"])
+        self.assertTrue(has_probe_concept, f"Follow-up question should probe missing concept: {next_q.question_text}")
+        self.assertEqual(res["adaptive_strategy"].get("follow_up_mode"), "probe_missing")
+        self.assertEqual(res["adaptive_strategy"].get("follow_up_topic"), "Database Indexing")
+
+    def test_case_11_adaptive_follow_up_correct_answer_deeper_question(self):
+        """Case 11: Correct / strong answer asks a deeper question on the same topic."""
+        strong_answer = (
+            "Database indexes build B-tree data structures on table columns to reduce query lookup time "
+            "from O(N) full table scans to O(log N) search complexity. They significantly accelerate SELECT "
+            "queries, though they add minor write overhead during INSERT or UPDATE operations."
+        )
+
+        res = interview_orchestrator.submit_answer(
+            db=self.db,
+            interview_id=self.interview.id,
+            question_id=self.question1.id,
+            answer_text=strong_answer,
+        )
+
+        self.assertFalse(res["is_completed"])
+        next_q = res["next_question"]
+        self.assertIsNotNone(next_q)
+        self.assertNotEqual(next_q.id, self.question1.id)
+
+        # Must ask a deeper question on database indexing internals (clustered index, page splits, or table scan trade-offs)
+        q_text_lower = next_q.question_text.lower()
+        has_deeper_concept = any(term in q_text_lower for term in ["clustered", "page split", "fragmentation", "table scan", "internals", "high-concurrency"])
+        self.assertTrue(has_deeper_concept, f"Follow-up should dive deeper: {next_q.question_text}")
+        self.assertEqual(res["adaptive_strategy"].get("follow_up_mode"), "deeper")
+
+    def test_case_12_irrelevant_off_topic_answer_does_not_trigger_follow_up(self):
+        """Case 12: Irrelevant / off-topic answer does NOT generate an answer-aware follow-up on the off-topic subject."""
+        off_topic_answer = "I really love eating pepperoni pizza with extra cheese while watching comedy movies on Friday nights."
+
+        res = interview_orchestrator.submit_answer(
+            db=self.db,
+            interview_id=self.interview.id,
+            question_id=self.question1.id,
+            answer_text=off_topic_answer,
+        )
+
+        self.assertEqual(res["analysis"]["performance_level"], "off_topic")
+        self.assertLessEqual(res["analysis"]["final_score"], 20.0)
+
+        # Next question MUST NOT follow up on pizza or movies!
+        next_q = res["next_question"]
+        if next_q:
+            q_text_lower = next_q.question_text.lower()
+            self.assertNotIn("pizza", q_text_lower)
+            self.assertNotIn("movie", q_text_lower)
+
+        # Strategy must NOT be follow-up mode
+        self.assertIsNone(res["adaptive_strategy"].get("follow_up_mode"))
+
+    def test_case_13_empty_answer_follows_standard_flow(self):
+        """Case 13: Empty or trivial answer does NOT trigger an answer-aware follow-up."""
+        res = interview_orchestrator.submit_answer(
+            db=self.db,
+            interview_id=self.interview.id,
+            question_id=self.question1.id,
+            answer_text="",
+        )
+
+        self.assertFalse(res["is_completed"])
+        # Should NOT be an adaptive follow-up
+        self.assertIsNone(res["adaptive_strategy"].get("follow_up_mode"))
+
+    def test_case_14_question_limit_enforcement(self):
+        """Case 14: Follow-up questions adapt existing pre-generated questions in-place and respect max limits."""
+        question2 = Question(
+            id=uuid.uuid4(),
+            interview_id=self.interview.id,
+            sequence_number=2,
+            question_text="Generic placeholder question.",
+            question_type="technical",
+        )
+        self.db.add(question2)
+        self.db.commit()
+
+        initial_count = len(interview_orchestrator._get_questions(self.db, self.interview.id))
+        self.assertEqual(initial_count, 2)
+
+        # Submit answer to question 1
+        res = interview_orchestrator.submit_answer(
+            db=self.db,
+            interview_id=self.interview.id,
+            question_id=self.question1.id,
+            answer_text="Indexes use B-trees for rapid search lookups.",
+        )
+
+        # Question count must remain exactly 2 (question 2 was adapted in place)
+        all_q = interview_orchestrator._get_questions(self.db, self.interview.id)
+        self.assertEqual(len(all_q), 2, "Question limit must be preserved without adding extra question rows")
+        self.assertEqual(res["next_question"].id, question2.id)
+        self.assertNotEqual(res["next_question"].question_text, "Generic placeholder question.")
+
 
 if __name__ == "__main__":
     unittest.main()
